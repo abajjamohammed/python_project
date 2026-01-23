@@ -17,6 +17,12 @@ teacher2 = Teacher(3, "Dr Jane", "jane@uni.com")
 
 student1 = Student(4, "Alice", "alice@uni.com", "CS", "G1")
 student2 = Student(5, "Bob", "bob@uni.com", "CS", "G2")
+teacher1 = Teacher(2, "Pr. Sanae KHALI ISSA", "sanae@uni.com")
+teacher2 = Teacher(3, "Pr. Ezziyyani Mostafa", "mostafa@uni.com")
+teacher3 = Teacher(4, "Pr. JEBARI", "jebari@uni.com")
+
+student1 = Student(5, "Fatima", "fatima@uni.com", "CS", "G1")
+student2 = Student(6, "Hamza", "hamza@uni.com", "CS", "G2")
 
 # -------------------------
 # Step 2: Initialize Rooms
@@ -25,6 +31,9 @@ rooms = [
     Room(1, "Room A", 30, ["Projector"]),
     Room(2, "Room B", 60, ["Projector"]),
     Room(3, "Lab 1", 25, ["Computers"])
+    Room(1, "Amphi 1", 30, ["Projector"]),
+    Room(2, "Amphi 6", 60, ["Projector"]),
+    Room(3, "Salle E15", 25, ["Computers"])
 ]
 
 # -------------------------
@@ -45,6 +54,9 @@ courses = [
     Course(1, "Algorithms", teacher1, "G1", 28, ["Projector"]),
     Course(2, "Databases", teacher1, "G2", 55, ["Projector"]),
     Course(3, "Programming Lab", teacher2, "G1", 20, ["Computers"]),
+    Course(1, "Machine Learning", teacher1, "G1", 28, ["Projector"]),
+    Course(2, "Databases", teacher2, "G2", 55, ["Projector"]),
+    Course(3, "Python Programming", teacher3, "G1", 20, ["Computers"]),
     Course(4, "Data Structures", teacher2, "G2", 25, ["Projector"])
 ]
 
@@ -74,10 +86,19 @@ while True:
         print("1. Dr Smith")
         print("2. Dr Jane")
         t_choice = input("Enter choice: ")
+        print("\nSelect teacher:")
+        print("1. Pr. Sanae KHALI ISSA")
+        print("2. Pr. Ezziyyani Mostafa")
+        print("3. Pr. JEBARI")
+
+        t_choice = input("Enter choice: ")
+
         if t_choice == "1":
             teacher_menu(teacher1, schedule, rooms)
         elif t_choice == "2":
             teacher_menu(teacher2, schedule, rooms)
+        elif t_choice == "3":
+            teacher_menu(teacher3, schedule, rooms)
         else:
             print("Invalid choice.")
 
@@ -87,6 +108,12 @@ while True:
         print("1. Alice (G1)")
         print("2. Bob (G2)")
         s_choice = input("Enter choice: ")
+        print("\nSelect student:")
+        print("1. Fatima (G1)")
+        print("2. Hamza (G2)")
+
+        s_choice = input("Enter choice: ")
+
         if s_choice == "1":
             student_menu(student1, schedule, rooms)
         elif s_choice == "2":
