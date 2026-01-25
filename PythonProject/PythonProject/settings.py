@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'scheduler', # Added the scheduler app :mohammed 25/01
 ]
 
 MIDDLEWARE = [
@@ -115,3 +116,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+# using our user model
+AUTH_USER_MODEL = 'scheduler.User'

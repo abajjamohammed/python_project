@@ -5,6 +5,9 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     ROLE_CHOICES = [('A', 'Admin'), ('T', 'Teacher'), ('S', 'Student')]
     role = models.CharField(max_length=1, choices=ROLE_CHOICES)
+    # Le groupe de l'étudiant (ex: "G1", "Info-A"). 
+    # blank=True car les Profs et Admin n'ont pas de groupe.
+    student_group = models.CharField(max_length=50, blank=True, null=True) #added this bcs we need to know the group of the student :mohammed 25/01
 
 # replaces rooms.py
 class Room(models.Model):
@@ -28,3 +31,23 @@ class ScheduledSession(models.Model):
     day = models.CharField(max_length=20)
     start_hour = models.IntegerField()
     end_hour = models.IntegerField()
+    
+    
+#added those :mohammed 25/01
+class ReservationRequest(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'En attente'),
+        ('APPROVED', 'Approuvée'),
+        ('REJECTED', 'Rejetée'),
+    ]
+
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    day = models.CharField(max_length=20)
+    start_hour = models.IntegerField()
+    end_hour = models.IntegerField()
+    reason = models.TextField(blank=True, help_text="Motif de la réservation (ex: Rattrapage)")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+
+    def __str__(self):
+        return f"Demande de {self.teacher.username} - {self.status}"
