@@ -1,0 +1,30 @@
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+
+# replaces users.py logic
+class User(AbstractUser):
+    ROLE_CHOICES = [('A', 'Admin'), ('T', 'Teacher'), ('S', 'Student')]
+    role = models.CharField(max_length=1, choices=ROLE_CHOICES)
+
+# replaces rooms.py
+class Room(models.Model):
+    name = models.CharField(max_length=100)
+    capacity = models.IntegerField()
+    # Stores equipment as a comma-separated string or a new table
+    equipment = models.CharField(max_length=255) 
+
+# replaces courses.py
+class Course(models.Model):
+    name = models.CharField(max_length=200)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE)
+    group_name = models.CharField(max_length=50)
+    student_count = models.IntegerField()
+    equipment_needed = models.CharField(max_length=255)
+
+# replaces schedule.py "session" logic
+class ScheduledSession(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    day = models.CharField(max_length=20)
+    start_hour = models.IntegerField()
+    end_hour = models.IntegerField()
