@@ -1,0 +1,49 @@
+{% extends 'scheduler/base.html' %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Gestion des Réservations</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-info">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow">
+        <div class="card-body">
+            {% if requests %}
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Prof</th>
+                        <th>Salle</th>
+                        <th>Jour</th>
+                        <th>Heure</th>
+                        <th>Motif</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td>{{ req.teacher.username }}</td>
+                        <td>{{ req.room.name }}</td>
+                        <td>{{ req.day }}</td>
+                        <td>{{ req.start_hour }}h - {{ req.end_hour }}h</td>
+                        <td>{{ req.reason }}</td>
+                        <td>
+                            <a href="{% url 'process_request' req.id 'approve' %}" class="btn btn-sm btn-success">✔</a>
+                            <a href="{% url 'process_request' req.id 'reject' %}" class="btn btn-sm btn-danger">✖</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <p class="text-center text-muted">Aucune demande en attente.</p>
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Retour</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

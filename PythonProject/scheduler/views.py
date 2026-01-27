@@ -1,7 +1,10 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required  # <--- NEW IMPORT
+from django.contrib import messages
 from .models import Room, Course, ReservationRequest, User, ScheduledSession
 from django.db.models import Count
+from .forms import ReservationForm
+from django.shortcuts import render, redirect, get_object_or_404 # Vérifie que tu as tout ça
 
 @login_required  # <--- THIS PROTECTS THE VIEW
 def admin_dashboard(request):
@@ -38,3 +41,43 @@ def admin_dashboard(request):
 
     # 4. Send to the template
     return render(request, 'scheduler/dashboard.html', context)
+
+#added by mohammed# --- AJOUTS MEMBER 4 ---
+
+@login_required
+def make_reservation(request):
+    """Permet à un prof de faire une demande"""
+    if request.method == 'POST':
+        form = ReservationForm(request.POST)
+        if form.is_valid():
+            reservation = form.save(commit=False)
+            reservation.teacher = request.user # On attache le prof connecté
+            reservation.save()
+            messages.success(request, "Demande envoyée avec succès !")
+            return redirect('dashboard')
+    else:
+        form = ReservationForm()
+    
+    return render(request, 'scheduler/make_reservation.html', {'form': form})
+
+@login_required
+def approve_reservations(request):
+    """Liste les demandes en attente pour l'admin"""
+    requests = ReservationRequest.objects.filter(status='PENDING')
+    return render(request, 'scheduler/approve_reservations.html', {'requests': requests})
+
+@login_required
+def process_request(request, req_id, action):
+    """Traite l'action Accepter ou Refuser"""
+    reservation = get_object_or_404(ReservationRequest, id=req_id)
+    
+    if action == 'approve':
+        reservation.status = 'APPROVED'
+        reservation.save()
+        messages.success(request, "Réservation approuvée.")
+    elif action == 'reject':
+        reservation.status = 'REJECTED'
+        reservation.save()
+        messages.error(request, "Réservation rejetée.")
+    
+    return redirect('approve_reservations')

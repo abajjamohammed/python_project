@@ -30,4 +30,9 @@ urlpatterns = [
     
     # Logout (Redirects to login page)
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+
+    # --- mohammmed's additions 
+    path('reservation/new/', views.make_reservation, name='make_reservation'),
+    path('reservations/list/', views.approve_reservations, name='approve_reservations'),
+    path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
 ]
