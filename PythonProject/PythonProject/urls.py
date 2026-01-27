@@ -16,7 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.contrib.auth import views as auth_views # Import Django Auth Views
+from scheduler import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Dashboard (Home)
+    path('', views.admin_dashboard, name='dashboard'),
+
+    # Login Page (Using our custom template)
+    path('login/', auth_views.LoginView.as_view(template_name='scheduler/login.html'), name='login'),
+    
+    # Logout (Redirects to login page)
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 ]

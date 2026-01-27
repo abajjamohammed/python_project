@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Smart University</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* 1. The Background: Dark Gradient */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden; /* Hide scrollbars for the floating bubbles */
+        }
+
+        /* 2. Floating Bubbles (The 'Glow' behind the glass) */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            z-index: 0;
+            animation: float 6s ease-in-out infinite;
+        }
+        .bubble-1 { top: 10%; left: 20%; width: 200px; height: 200px; background: rgba(0, 255, 255, 0.4); }
+        .bubble-2 { bottom: 20%; right: 20%; width: 250px; height: 250px; background: rgba(255, 0, 150, 0.4); animation-delay: 1s; }
+        .bubble-3 { bottom: 10%; left: 10%; width: 150px; height: 150px; background: rgba(0, 255, 100, 0.3); animation-delay: 2s; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* 3. The Glass Card (The Login Box) */
+        .glass-card {
+            position: relative;
+            z-index: 10;
+            width: 400px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1); /* See-through white */
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Thin frosted border */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(15px); /* THE MAGIC BLUR EFFECT */
+            color: white;
+            text-align: center;
+        }
+
+        /* 4. Form Styling */
+        .form-control {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 30px;
+            padding: 15px 20px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            box-shadow: none;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Placeholder text color */
+        ::placeholder { color: rgba(255, 255, 255, 0.6) !important; }
+
+        .btn-login {
+            width: 100%;
+            border-radius: 30px;
+            padding: 12px;
+            background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%); /* Cyan Blue Gradient */
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.6);
+            color: white;
+        }
+
+        .title { font-weight: 700; font-size: 2rem; margin-bottom: 10px; }
+        .subtitle { color: rgba(255, 255, 255, 0.7); margin-bottom: 30px; font-size: 0.9rem; }
+        
+        /* Error Message Styling */
+        .alert-error {
+            background: rgba(231, 76, 60, 0.2);
+            color: #ffcccc;
+            border: 1px solid #e74c3c;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Background Bubbles -->
+    <div class="bubble bubble-1"></div>
+    <div class="bubble bubble-2"></div>
+    <div class="bubble bubble-3"></div>
+
+    <!-- The Glass Login Card -->
+    <div class="glass-card">
+        <div class="mb-4">
+            <i class="fas fa-university fa-3x"></i>
+        </div>
+        <div class="title">ALPHAGO University</div>
+        <div class="subtitle">Sign in to manage your university timetable</div>
+
+        <!-- Django Login Form -->
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Error Handling -->
+            {% if form.errors %}
+                <div class="alert-error">
+                    <i class="fas fa-exclamation-circle"></i> Invalid username or password.
+                </div>
+            {% endif %}
+
+            <!-- Username Field -->
+            <div class="input-group mb-3">
+                <input type="text" name="username" class="form-control" placeholder="Username" required autofocus>
+            </div>
+
+            <!-- Password Field -->
+            <div class="input-group mb-3">
+                <input type="password" name="password" class="form-control" placeholder="Password" required>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-login">
+                Sign In
+            </button>
+        </form>
+
+        <div class="mt-4">
+            <a href="#" style="color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.9rem;">Forgot Password?</a>
+        </div>
+    </div>
+
+</body>
+</html>
