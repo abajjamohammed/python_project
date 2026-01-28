@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Timetable System</title>
+    
+    <!-- 1. BOOTSTRAP CSS (Makes it look professional instantly) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- 2. FONT AWESOME (For icons like 📅, 🎓, 🏫) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* Custom Styling */
+        body { 
+            background-color: #f4f6f9; /* Light Grey Background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* The Sidebar Styling */
+        .sidebar { 
+            min-height: 100vh; 
+            background: #2c3e50; /* Navy Blue */
+            color: white; 
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background: #1a252f;
+            text-align: center;
+        }
+
+        .nav-link { 
+            color: #bdc3c7; 
+            padding: 15px 20px;
+            font-size: 1.1rem;
+        }
+        
+        /* Hover Effect for Menu Items */
+        .nav-link:hover, .nav-link.active { 
+            color: white; 
+            background: #34495e; 
+            border-left: 5px solid #3498db; /* Blue accent line */
+        }
+        
+        /* The Content Area */
+        .content-area {
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container-fluid">
+        <div class="row">
+            
+            <!-- 3. THE SIDEBAR (Navigation) -->
+            <div class="col-md-2 sidebar p-0">
+                <div class="sidebar-header">
+                    <h4><i class="fas fa-university"></i> ALPHAGO University</h4>
+                </div>
+                
+                <ul class="nav flex-column mt-2">
+                    <!-- Dashboard Link -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active">
+                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    
+                    <!-- Timetable Link -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-calendar-alt me-2"></i> Timetable
+                        </a>
+                    </li>
+                    
+                    <!-- Professors Link -->
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-chalkboard-teacher me-2"></i> Teachers
+                        </a>
+                    </li>
+
+                     <!-- Students Link -->
+                     <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-user-graduate me-2"></i> Students
+                        </a>
+                    </li>
+
+                    <!-- Logout -->
+                    <li class="nav-item mt-5">
+                        <a href="#" class="nav-link text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- 4. THE MAIN CONTENT (This changes per page) -->
+            <div class="col-md-10 content-area">
+                <!-- Top Navbar for User Profile -->
+                <div class="d-flex justify-content-end mb-4">
+                    <div class="dropdown">
+                        <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i> Admin User
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Settings</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- ⚠️ CRITICAL: This is where child pages inject their code -->
+                {% block content %}
+                {% endblock %}
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (Required for Dropdowns/Popups) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

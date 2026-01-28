@@ -1,0 +1,11 @@
+{% extends 'scheduler/base.html' %}
+{% block content %}
+<div class="container" style="max-width: 600px;">
+    <h2>Faire une demande de salle</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Envoyer</button>
+    </form>
+</div>
+{% endblock %}

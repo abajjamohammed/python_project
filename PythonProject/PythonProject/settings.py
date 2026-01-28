@@ -118,3 +118,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 # using our user model
 AUTH_USER_MODEL = 'scheduler.User'
+# Redirect to the dashboard after login
+LOGIN_REDIRECT_URL = 'dashboard' 
+
+# Redirect to the login page after logout
+LOGOUT_REDIRECT_URL = 'login' 
+
+# Where to go if someone tries to access a restricted page
+LOGIN_URL = 'login'
