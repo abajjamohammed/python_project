@@ -5,11 +5,11 @@ class TimetableAlgorithm:
     def __init__(self):
         # On définit les créneaux horaires fixes (comme dans ton main.py)
         self.timeslots = [
-            ("Lundi", 8, 10), ("Lundi", 10, 12), ("Lundi", 14, 16),
-            ("Mardi", 8, 10), ("Mardi", 10, 12), ("Mardi", 14, 16),
-            ("Mercredi", 8, 10), ("Mercredi", 10, 12),
-            ("Jeudi", 8, 10), ("Jeudi", 10, 12),
-            ("Vendredi", 8, 10), ("Vendredi", 10, 12)
+            ("Monday", 8, 10), ("Monday", 10, 12), ("Monday", 14, 16),
+            ("Tuesday", 8, 10), ("Tuesday", 10, 12), ("Tuesday", 14, 16),
+            ("Wednesday", 8, 10), ("Wednesday", 10, 12),
+            ("Thursday", 8, 10), ("Thursday", 10, 12),
+            ("Friday", 8, 10), ("Friday", 10, 12)
         ]
 
     def check_conflict(self, day, start, end, room=None, teacher=None, group=None):

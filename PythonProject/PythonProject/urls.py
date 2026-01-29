@@ -40,4 +40,6 @@ urlpatterns = [
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
     path('generate-schedule/', views.run_timetable_generation, name='generate_schedule'),
+    #---Adjii's additions for generate schedule--
+    path('export/csv/', views.export_timetable_csv, name='export_timetable_csv'),
 ]
