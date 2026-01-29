@@ -19,6 +19,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views # Import Django Auth Views
 from scheduler import views
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -28,11 +29,12 @@ urlpatterns = [
     # Login Page (Using our custom template)
     path('login/', auth_views.LoginView.as_view(template_name='scheduler/login.html'), name='login'),
     
-    # Logout (Redirects to login page)
+    # Logout (Redirects to login page),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 
     # --- mohammmed's additions 
     path('reservation/new/', views.make_reservation, name='make_reservation'),
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
+    path('generate-schedule/', views.run_timetable_generation, name='generate_schedule'),
 ]

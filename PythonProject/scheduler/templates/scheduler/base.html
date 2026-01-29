@@ -93,8 +93,13 @@
 
                     <!-- Logout -->
                     <li class="nav-item mt-5">
-                        <a href="#" class="nav-link text-danger">
-                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+                            {% csrf_token %}
+                        </form>
+                        <a href="javascript:void(0)" 
+                        onclick="document.getElementById('logout-form').submit();" 
+                        class="nav-link text-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
                         </a>
                     </li>
                 </ul>

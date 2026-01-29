@@ -1,12 +1,24 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required  # <--- NEW IMPORT
 from django.contrib import messages
 from .models import Room, Course, ReservationRequest, User, ScheduledSession
 from django.db.models import Count
 from .forms import ReservationForm
 from django.shortcuts import render, redirect, get_object_or_404 # Vérifie que tu as tout ça
+from .utils import TimetableAlgorithm
 
 @login_required  # <--- THIS PROTECTS THE VIEW
+def dashboard_router(request):
+    """The 'Home' page that redirects users based on their role"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.user.role == 'A':
+        return redirect('admin_dashboard')
+    elif request.user.role == 'T':
+        return redirect('teacher_dashboard')
+    else:
+        return redirect('student_dashboard')
+    
 def admin_dashboard(request):
     # 1. Fetch Real Data from Database
     total_students = User.objects.filter(role='S').count()
@@ -81,3 +93,46 @@ def process_request(request, req_id, action):
         messages.error(request, "Réservation rejetée.")
     
     return redirect('approve_reservations')
+#Added by Adjii:
+def teacher_dashboard(request):
+    # Prof sees her specific courses and her requests (Adjii's addition)
+    sessions = ScheduledSession.objects.filter(course__teacher=request.user)
+    my_reqs = ReservationRequest.objects.filter(teacher=request.user)
+    context = {
+        'sessions': sessions,
+        'my_reqs': my_reqs,
+        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        'hours': [(8, 10), (10, 12), (14, 16)]
+    }
+    return render(request, 'scheduler/teacher_dashboard.html', context)
+def student_dashboard(request):
+    #Student see available sessions for his own group (Adjii's addition)
+    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
+    context = {
+        'sessions': sessions,
+        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        'hours': [(8, 10), (10, 12), (14, 16)]
+    }
+    return render(request, 'scheduler/student_dashboard.html', context)
+
+#Added by Adjii for time table generation
+def run_timetable_generation(request):
+    # Security: Ensure only Admins can do this
+    if not request.user.is_authenticated or request.user.role != 'A':
+        messages.error(request, "Accès refusé.")
+        return redirect('login')
+
+    # 1. Clear existing schedule (to avoid duplicates)
+    ScheduledSession.objects.all().delete()
+
+    # 2. Trigger the Algorithm
+    algo = TimetableAlgorithm()
+    unscheduled = algo.generate_timetable()
+
+    # 3. Success/Warning message
+    if not unscheduled:
+        messages.success(request, "L'emploi du temps a été généré avec succès !")
+    else:
+        messages.warning(request, f"Généré, mais impossible de placer : {', '.join(unscheduled)}")
+
+    return redirect('admin_dashboard') # Replace with your actual admin dashboard name ?? COME BACK

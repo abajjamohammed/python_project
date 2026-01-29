@@ -126,3 +126,5 @@ LOGOUT_REDIRECT_URL = 'login'
 
 # Where to go if someone tries to access a restricted page
 LOGIN_URL = 'login'
+#To allow logging-out
+LOGOUT_ON_GET = True
