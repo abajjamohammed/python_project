@@ -25,6 +25,9 @@ urlpatterns = [
     
     # Dashboard (Home)
     path('', views.admin_dashboard, name='dashboard'),
+    path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/teacher/', views.teacher_dashboard, name='teacher_dashboard'),
+    path('dashboard/student/', views.student_dashboard, name='student_dashboard'),
 
     # Login Page (Using our custom template)
     path('login/', auth_views.LoginView.as_view(template_name='scheduler/login.html'), name='login'),

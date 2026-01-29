@@ -70,7 +70,10 @@ def make_reservation(request):
     else:
         form = ReservationForm()
     
-    return render(request, 'scheduler/make_reservation.html', {'form': form})
+    return render(request, 'scheduler/make_reservation.html', {
+    'form': form,
+    'errors': form.errors 
+})
 
 @login_required
 def approve_reservations(request):
