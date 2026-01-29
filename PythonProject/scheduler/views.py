@@ -5,6 +5,9 @@ from django.db.models import Count
 from .forms import ReservationForm
 from django.shortcuts import render, redirect, get_object_or_404 # Vérifie que tu as tout ça
 from .utils import TimetableAlgorithm
+from django.http import HttpResponse
+import csv
+
 
 @login_required  # <--- THIS PROTECTS THE VIEW
 def dashboard_router(request):
@@ -53,6 +56,41 @@ def admin_dashboard(request):
 
     # 4. Send to the template
     return render(request, 'scheduler/dashboard.html', context)
+#  (Member 2: Teachers, Students, & Generate)
+
+@login_required
+def teacher_timetable(request):
+    # GOAL: Show courses assigned to the logged-in teacher (Sanae)
+    my_sessions = ScheduledSession.objects.filter(course__teacher=request.user).order_by('day', 'start_hour')
+
+    context = {
+        'sessions': my_sessions,
+        'user_name': request.user.username
+    }
+    return render(request, 'scheduler/teacher_timetable.html', context)
+
+
+@login_required
+def student_timetable(request):
+    # GOAL: Show sessions for the student's group (Mohammed)
+    current_group = request.user.student_group 
+    
+    if current_group:
+        group_sessions = ScheduledSession.objects.filter(course__group_name=current_group).order_by('day', 'start_hour')
+    else:
+        group_sessions = []
+
+    context = {
+        'sessions': group_sessions,
+        'group_name': current_group
+    }
+    return render(request, 'scheduler/student_timetable.html', context)
+
+
+@login_required
+def generate_timetable(request):
+    # GOAL: Placeholder URL for the 'Generate' button
+    return redirect('admin_dashboard')
 
 #added by mohammed# --- AJOUTS MEMBER 4 ---
 
@@ -139,3 +177,41 @@ def run_timetable_generation(request):
         messages.warning(request, f"Généré, mais impossible de placer : {', '.join(unscheduled)}")
 
     return redirect('admin_dashboard') # Replace with your actual admin dashboard name ?? COME BACK
+
+#Adjii added this for the generate schedule button
+@login_required
+def export_timetable_csv(request):
+    """Generates a CSV file of the timetable for Excel export"""
+    
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    # The filename that the user will see when downloading
+    response['Content-Disposition'] = 'attachment; filename="university_timetable.xl"'
+
+    writer = csv.writer(response)
+    
+    writer.writerow(['Course Name', 'Teacher', 'Room', 'Day', 'Start Time', 'End Time'])
+
+    # Determine which data to export based on user role
+    if request.user.role == 'A':
+        # Admins can export the entire schedule
+        sessions = ScheduledSession.objects.all().select_related('course', 'room', 'course__teacher')
+    elif request.user.role == 'T':
+        # Teachers export only their own classes
+        sessions = ScheduledSession.objects.filter(course__teacher=request.user).select_related('course', 'room')
+    else:
+        # Students export their group's schedule
+        sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group).select_related('course', 'room')
+
+    # Fill the CSV with data from the database
+    for session in sessions:
+        writer.writerow([
+            session.course.name,
+            session.course.teacher.username,
+            session.room.name,
+            session.day,
+            f"{session.start_hour}:00",
+            f"{session.end_hour}:00"
+        ])
+
+    return response

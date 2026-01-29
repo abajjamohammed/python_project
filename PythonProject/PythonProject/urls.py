@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from django.contrib.auth import views as auth_views # Import Django Auth Views
 from scheduler import views
 
@@ -35,9 +35,14 @@ urlpatterns = [
     # Logout (Redirects to login page),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 
+     # Connect the Scheduler app URLs
+    path('scheduler/', include('scheduler.urls')),
+
     # --- mohammmed's additions 
     path('reservation/new/', views.make_reservation, name='make_reservation'),
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
     path('generate-schedule/', views.run_timetable_generation, name='generate_schedule'),
+    #---Adjii's additions for generate schedule--
+    path('export/csv/', views.export_timetable_csv, name='export_timetable_csv'),
 ]

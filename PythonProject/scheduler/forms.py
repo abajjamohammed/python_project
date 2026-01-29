@@ -3,11 +3,12 @@ from .models import ReservationRequest
 
 class ReservationForm(forms.ModelForm):
     DAY_CHOICES = [
-        ('Lundi', 'Lundi'),
-        ('Mardi', 'Mardi'),
-        ('Mercredi', 'Mercredi'),
-        ('Jeudi', 'Jeudi'),
-        ('Vendredi', 'Vendredi'),
+        ('Monday', 'Monday'),
+        ('Tuesday', 'Tuesday'),
+        ('Wednesday', 'Wednesday'),
+        ('Thursday', 'Thursday'),
+        ('Friday', 'Friday'),
+        ('Saturday','Saturday')
     ]
     
     HOUR_CHOICES = [(i, f"{i}h") for i in range(8, 20)]
