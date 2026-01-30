@@ -30,7 +30,7 @@ student2 = Student(6, "Hamza", "hamza@uni.com", "CS", "G2")
 rooms = [
     Room(1, "Room A", 30, ["Projector"]),
     Room(2, "Room B", 60, ["Projector"]),
-    Room(3, "Lab 1", 25, ["Computers"])
+    Room(3, "Lab 1", 25, ["Computers"]),
     Room(1, "Amphi 1", 30, ["Projector"]),
     Room(2, "Amphi 6", 60, ["Projector"]),
     Room(3, "Salle E15", 25, ["Computers"])
