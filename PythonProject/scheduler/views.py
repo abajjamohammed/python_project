@@ -33,15 +33,13 @@ def admin_dashboard(request):
     total_teachers = User.objects.filter(role='T').count()
     total_rooms = Room.objects.count()
     
-    # Count pending requests (The "Alerts")
-    pending_requests = ReservationRequest.objects.filter(status='PENDING').count()
+    # Get the actual reservation objects (not just the count)
+    pending_reservations = ReservationRequest.objects.filter(status='PENDING')  # REMOVED .count()
+    pending_requests = pending_reservations.count()  # Count for the badge
 
-    # 2. Data for the Chart (e.g., Number of sessions per day)
-    # We count how many sessions exist for each day
+    # 2. Data for the Chart
     sessions_per_day = ScheduledSession.objects.values('day').annotate(count=Count('id'))
     
-    # Prepare lists for Chart.js
-    # If database is empty, we provide default data so the chart doesn't crash
     if not sessions_per_day:
         chart_labels = ["Mon", "Tue", "Wed", "Thu", "Fri"]
         chart_data = [0, 0, 0, 0, 0]
@@ -49,17 +47,17 @@ def admin_dashboard(request):
         chart_labels = [item['day'] for item in sessions_per_day]
         chart_data = [item['count'] for item in sessions_per_day]
 
-    # 3. Pack everything into a context dictionary
+    # 3. Pack everything into context
     context = {
         'total_students': total_students,
         'total_teachers': total_teachers,
         'total_rooms': total_rooms,
-        'pending_requests': pending_requests,
+        'pending_requests': pending_requests,  # The count for the badge
+        'pending_reservations': pending_reservations,  # <-- ADD THIS LINE - the actual objects for the table
         'chart_labels': chart_labels,
         'chart_data': chart_data,
     }
 
-    # 4. Send to the template
     return render(request, 'scheduler/dashboard.html', context)
 #  (Member 2: Teachers, Students, & Generate)
 
@@ -95,7 +93,7 @@ def student_timetable(request):
 @login_required
 def generate_timetable(request):
      # Security: Ensure only Admins can do this
-    if not request.user.is_authenticated or request.user.role != 'A':
+    if not request.user.is_authenticated or request.user.role == 'Teacher' or request.user.role == 'Student':
         messages.error(request, "Accès refusé.")
         return redirect('login')
 

@@ -271,57 +271,72 @@
         </div>
     </div>
 
-    <!-- 3. CONFLICTS TABLE (Static Mockup for visual completeness as per screenshot) -->
-    <div class="dashboard-card overflow-hidden mb-4">
-        <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold mb-0">Recent Room Conflicts</h5>
-            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">System Monitoring Active</span>
-        </div>
-        <div class="table-responsive">
-            <table class="table conflict-table mb-0">
-                <thead>
-                    <tr>
-                        <th>Room ID</th>
-                        <th>Conflicting Courses</th>
-                        <th>Time Slot</th>
-                        <th>Status</th>
-                        <th>Action Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="material-symbols-outlined text-muted" style="font-size: 18px;">meeting_room</span>
-                                <span class="fw-bold text-dark">Room 302</span>
-                            </div>
-                        </td>
-                        <td class="text-secondary">CS101 vs. MATH204</td>
-                        <td class="text-secondary">Mon, 10:00 AM - 11:30 AM</td>
-                        <td><span class="status-badge badge-conflict"><div class="dot dot-red me-1"></div>High Conflict</span></td>
-                        <td><a href="#" class="text-primary fw-bold text-decoration-none">Reassign Room</a></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="material-symbols-outlined text-muted" style="font-size: 18px;">meeting_room</span>
-                                <span class="fw-bold text-dark">Lab 01</span>
-                            </div>
-                        </td>
-                        <td class="text-secondary">BIO Lab vs. CHEM Prep</td>
-                        <td class="text-secondary">Wed, 02:00 PM - 04:00 PM</td>
-                        <td><span class="status-badge badge-overlap"><div class="dot dot-orange me-1"></div>Overlapping</span></td>
-                        <td><a href="#" class="text-primary fw-bold text-decoration-none">Adjust Time</a></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+
         <!-- Empty State (Hidden if data exists) -->
         <div class="text-center py-5 d-none"> <!-- Remove d-none to test empty state -->
             <span class="material-symbols-outlined text-success" style="font-size: 48px;">task_alt</span>
             <p class="text-muted mt-2">No other conflicts detected for this week.</p>
         </div>
     </div>
+
+    <!-- PENDING RESERVATIONS -->
+<div class="row g-4">
+    <div class="col-12">
+        <div class="dashboard-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h5 class="fw-bold mb-1">Pending Reservations</h5>
+                    <p class="text-muted small mb-0">Awaiting your approval</p>
+                </div>
+                <a href="{% url 'approve_reservations' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            
+            {% if pending_reservations %}
+            <div class="table-responsive">
+                <table class="table conflict-table">
+                    <thead>
+                        <tr>
+                            <th>Teacher</th>
+                            <th>Room Requested</th>
+                            <th>Date & Time</th>
+                            <th>Purpose</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                      {% for reservation in pending_reservations|slice:":5" %}
+                        <tr>
+                            <td>{{ reservation.teacher.username }}</td>  <!-- Changed -->
+                            <td>{{ reservation.room.name }}</td>
+                            <td>
+                                <div>{{ reservation.day }}</div>  <!-- Changed -->
+                                <small class="text-muted">{{ reservation.start_hour }}h - {{ reservation.end_hour }}h</small>  <!-- Changed -->
+                            </td>
+                            <td>{{ reservation.reason|truncatewords:5 }}</td>  <!-- Changed from 'purpose' -->
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'process_request' reservation.id 'approve' %}" class="btn btn-success">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    <a href="{% url 'process_request' reservation.id 'reject' %}" class="btn btn-danger">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <span class="material-symbols-outlined text-success" style="font-size: 48px;">task_alt</span>
+                <p class="text-muted mt-2">No pending reservations</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 
 </div>
 
