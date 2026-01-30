@@ -1,15 +1,15 @@
-from .models import Room, Course, ScheduledSession, User
+from .models import Room, Course, ScheduledSession, User, ReservationRequest
 from django.db.models import Q
 #created by mohammed 05/01  this is the main algorithm for generating the timetable(the logic)
 class TimetableAlgorithm:
     def __init__(self):
         # On définit les créneaux horaires fixes (comme dans ton main.py)
         self.timeslots = [
-            ("Lundi", 8, 10), ("Lundi", 10, 12), ("Lundi", 14, 16),
-            ("Mardi", 8, 10), ("Mardi", 10, 12), ("Mardi", 14, 16),
-            ("Mercredi", 8, 10), ("Mercredi", 10, 12),
-            ("Jeudi", 8, 10), ("Jeudi", 10, 12),
-            ("Vendredi", 8, 10), ("Vendredi", 10, 12)
+            ("Monday", 8, 10), ("Monday", 10, 12), ("Monday", 14, 16),
+            ("Tuesday", 8, 10), ("Tuesday", 10, 12), ("Tuesday", 14, 16),
+            ("Wednesday", 8, 10), ("Wednesday", 10, 12),
+            ("Thursday", 8, 10), ("Thursday", 10, 12),
+            ("Friday", 8, 10), ("Friday", 10, 12)
         ]
 
     def check_conflict(self, day, start, end, room=None, teacher=None, group=None):
@@ -59,10 +59,23 @@ class TimetableAlgorithm:
             if course.equipment_needed and course.equipment_needed not in room.equipment:
                 continue
 
+            # Adjii's edits 
             # Vérification Disponibilité (Appel à la base de données)
             if not self.check_conflict(day, start, end, room=room):
                 suitable_rooms.append(room)
+            # 3. NEW: Check for Approved Teacher Reservations
+            reservation_exists = ReservationRequest.objects.filter(
+                room=room,
+                day=day,
+                start_hour__lt=end,
+                end_hour__gt=start,
+                status='APPROVED' # Only blocked if the Admin approved it
+            ).exists()
 
+            if reservation_exists:
+                continue
+
+            suitable_rooms.append(room)
         # Si aucune salle n'est trouvée
         if not suitable_rooms:
             return None
@@ -76,6 +89,7 @@ class TimetableAlgorithm:
         """
         Fonction principale qui génère tout
         """
+        #Adjii's additions
         # Étape 0 : Nettoyer l'emploi du temps existant (Optionnel, pour éviter les doublons lors des tests)
         # ScheduledSession.objects.all().delete() 
 
@@ -94,7 +108,7 @@ class TimetableAlgorithm:
                 
                 # 2. Vérifier si le Groupe est libre
                 if self.check_conflict(day, start, end, group=course.group_name):
-                    continue # Groupe pas là, on change d'heure
+                    continue # Groupe is not free so we change hour
 
                 # 3. Trouver une salle
                 best_room = self.find_best_room(course, day, start, end)

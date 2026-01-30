@@ -85,17 +85,13 @@
         </a>
     </li>
 
-    <!-- Logout -->
-    <li class="nav-item mt-5">
-        <!-- This connects to the logout path we made earlier -->
-        <form action="{% url 'logout' %}" method="post">
-            {% csrf_token %}
-            <button type="submit" class="nav-link text-danger bg-transparent border-0">
-                <i class="fas fa-sign-out-alt me-2"></i> Logout
-            </button>
-        </form>
-    </li>
-</ul>
+                    <!-- Logout -->
+                    <li class="nav-item mt-5">
+                        <a href="#" class="nav-link text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        </a>
+                    </li>
+                </ul>
             </div>
             
             <!-- 4. THE MAIN CONTENT (This changes per page) -->

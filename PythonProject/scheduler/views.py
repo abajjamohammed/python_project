@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required  # <--- NEW IMPORT
 from django.contrib import messages
 from .models import Room, Course, ReservationRequest, User, ScheduledSession
@@ -10,9 +9,24 @@ from django.shortcuts import redirect
 import json  # <--- CRITICAL: You need this for the calendar data
 from .forms import TeacherForm # Import the new form
 
+from .utils import TimetableAlgorithm
+from django.http import HttpResponse
+import csv
 
 
 @login_required  # <--- THIS PROTECTS THE VIEW
+def dashboard_router(request):
+    """The 'Home' page that redirects users based on their role"""
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    if request.user.role == 'A':
+        return redirect('admin_dashboard')
+    elif request.user.role == 'T':
+        return redirect('teacher_dashboard')
+    else:
+        return redirect('student_dashboard')
+    
 def admin_dashboard(request):
     # 1. Fetch Real Data from Database
     total_students = User.objects.filter(role='S').count()
@@ -47,6 +61,58 @@ def admin_dashboard(request):
 
     # 4. Send to the template
     return render(request, 'scheduler/dashboard.html', context)
+#  (Member 2: Teachers, Students, & Generate)
+
+@login_required
+def teacher_timetable(request):
+    # GOAL: Show courses assigned to the logged-in teacher (Sanae)
+    my_sessions = ScheduledSession.objects.filter(course__teacher=request.user).order_by('day', 'start_hour')
+
+    context = {
+        'sessions': my_sessions,
+        'user_name': request.user.username
+    }
+    return render(request, 'scheduler/teacher_timetable.html', context)
+
+
+@login_required
+def student_timetable(request):
+    # GOAL: Show sessions for the student's group (Mohammed)
+    current_group = request.user.student_group 
+    
+    if current_group:
+        group_sessions = ScheduledSession.objects.filter(course__group_name=current_group).order_by('day', 'start_hour')
+    else:
+        group_sessions = []
+
+    context = {
+        'sessions': group_sessions,
+        'group_name': current_group
+    }
+    return render(request, 'scheduler/student_timetable.html', context)
+
+
+@login_required
+def generate_timetable(request):
+     # Security: Ensure only Admins can do this
+    if not request.user.is_authenticated or request.user.role != 'A':
+        messages.error(request, "Accès refusé.")
+        return redirect('login')
+
+    # 1. Clear existing schedule (to avoid duplicates)
+    ScheduledSession.objects.all().delete()
+
+    # 2. Trigger the Algorithm
+    algo = TimetableAlgorithm()
+    unscheduled = algo.generate_timetable()
+
+    # 3. Success/Warning message
+    if not unscheduled:
+        messages.success(request, "L'emploi du temps a été généré avec succès !")
+    else:
+        messages.warning(request, f"Généré, mais impossible de placer : {', '.join(unscheduled)}")
+
+    return redirect('admin_dashboard') # Replace with your actual admin dashboard name ?? COME BACK
 
 #added by mohammed# --- AJOUTS MEMBER 4 ---
 
@@ -64,7 +130,10 @@ def make_reservation(request):
     else:
         form = ReservationForm()
     
-    return render(request, 'scheduler/make_reservation.html', {'form': form})
+    return render(request, 'scheduler/make_reservation.html', {
+    'form': form,
+    'errors': form.errors 
+})
 
 @login_required
 def approve_reservations(request):
@@ -146,3 +215,63 @@ def add_teacher(request):
         form = TeacherForm()
     
     return render(request, 'scheduler/add_teacher.html', {'form': form})
+#Added by Adjii:
+def teacher_dashboard(request):
+    # Prof sees her specific courses and her requests (Adjii's addition)
+    sessions = ScheduledSession.objects.filter(course__teacher=request.user)
+    my_reqs = ReservationRequest.objects.filter(teacher=request.user)
+    context = {
+        'sessions': sessions,
+        'my_reqs': my_reqs,
+        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        'hours': [(8, 10), (10, 12), (14, 16)]
+    }
+    return render(request, 'scheduler/teacher_dashboard.html', context)
+def student_dashboard(request):
+    #Student see available sessions for his own group (Adjii's addition)
+    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
+    context = {
+        'sessions': sessions,
+        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        'hours': [(8, 10), (10, 12), (14, 16)]
+    }
+    return render(request, 'scheduler/student_dashboard.html', context)
+
+
+#Adjii added this for the generate schedule button
+@login_required
+def export_timetable_csv(request):
+    """Generates a CSV file of the timetable for Excel export"""
+    
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    # The filename that the user will see when downloading
+    response['Content-Disposition'] = 'attachment; filename="university_timetable.xl"'
+
+    writer = csv.writer(response)
+    
+    writer.writerow(['Course Name', 'Teacher', 'Room', 'Day', 'Start Time', 'End Time'])
+
+    # Determine which data to export based on user role
+    if request.user.role == 'A':
+        # Admins can export the entire schedule
+        sessions = ScheduledSession.objects.all().select_related('course', 'room', 'course__teacher')
+    elif request.user.role == 'T':
+        # Teachers export only their own classes
+        sessions = ScheduledSession.objects.filter(course__teacher=request.user).select_related('course', 'room')
+    else:
+        # Students export their group's schedule
+        sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group).select_related('course', 'room')
+
+    # Fill the CSV with data from the database
+    for session in sessions:
+        writer.writerow([
+            session.course.name,
+            session.course.teacher.username,
+            session.room.name,
+            session.day,
+            f"{session.start_hour}:00",
+            f"{session.end_hour}:00"
+        ])
+
+    return response

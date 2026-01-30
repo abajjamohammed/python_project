@@ -15,14 +15,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from django.contrib.auth import views as auth_views # Import Django Auth Views
 from scheduler import views
+
 
 urlpatterns = [
     # 1. Admin & Dashboard (The Home Page)
     path('admin/', admin.site.urls),
     path('', views.admin_dashboard, name='dashboard'),
+    path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/teacher/', views.teacher_dashboard, name='teacher_dashboard'),
+    path('dashboard/student/', views.student_dashboard, name='student_dashboard'),
 
     # 2. Authentication
     path('login/', auth_views.LoginView.as_view(template_name='scheduler/login.html'), name='login'),
@@ -34,8 +38,14 @@ urlpatterns = [
     path('timetable/', views.timetable_view, name='timetable'),
     path('teachers/add/', views.add_teacher, name='add_teacher'),
 
-    # 4. Mohammed's Additions (Reservations)
+   # Connect the Scheduler app URLs
+    path('scheduler/', include('scheduler.urls')),
+
+    # --- mohammmed's additions 
     path('reservation/new/', views.make_reservation, name='make_reservation'),
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
+    path('generate-schedule/', views.generate_timetable, name='generate_schedule'),
+    #---Adjii's additions for generate schedule--
+    path('export/csv/', views.export_timetable_csv, name='export_timetable_csv'),
 ]

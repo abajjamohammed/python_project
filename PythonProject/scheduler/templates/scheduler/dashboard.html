@@ -1,15 +1,73 @@
 {% extends 'scheduler/base.html' %}
 
 {% block content %}
+<style>
+/* PRINTING CSS: Only runs when generating a PDF or Printing */
+@media print {
+    /* Hide everything except the main report content */
+    .sidebar, .navbar, .btn, .quick-actions-card, .logout-link, .dropdown-toggle {
+        display: none !important;
+    }
+
+    /* Expand the main content to fill the page */
+    .main-content, .container-fluid, .card {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Force the chart to be visible */
+    canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Add a professional header to the PDF */
+    body::before {
+        content: "ALPHAGO UNIVERSITY - ACADEMIC SCHEDULE REPORT";
+        display: block;
+        text-align: center;
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 30px;
+        color: #333;
+    }
+}
+</style>
+
+
 <div class="container-fluid">
     
     <!-- Title -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
         <h2 class="h3 mb-0 text-gray-800">Administrator Dashboard</h2>
-        <a href="#" class="btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-download fa-sm text-white-50"></i> Generate Report
-        </a>
+       <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" id="genReportBtn" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-file-download"></i> Generate Report
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="genReportBtn">
+            <li><a class="dropdown-item" href="{% url 'export_timetable_csv' %}">
+                <i class="fas fa-file-csv text-success"></i> Export to Excel (.csv)
+            </a></li>
+
+            <li><a class="dropdown-item" href="#" onclick="window.print(); return false;">
+                <i class="fas fa-file-pdf text-danger"></i> Export to PDF (.pdf)
+            </a></li>
+
+            <li><a class="dropdown-item" href="#" onclick="exportAsImage();">
+                <i class="fas fa-image text-info"></i> Save as Image (.png)
+            </a></li>
+        </ul>
     </div>
+</div>
+
+<div class="d-none d-print-block text-center mb-4">
+    <h1 class="h2">ALPHAGO UNIVERSITY</h1>
+    <h2 class="h4 text-muted">Administrator Schedule Report</h2>
+    <hr>
+</div>
 
     <!-- 1. THE CARDS ROW (KPIs) -->
     <div class="row">
@@ -116,35 +174,61 @@
     </div>
 
 </div>
-
+{% endblock %}
 <!-- 3. JAVASCRIPT FOR THE CHART -->
+<!--Adjii: I added the curly braces in the js so vs code can read it the django way -->
+
+{% block scripts %}  
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+{{ chart_labels|json_script:"labels-data" }}
+{{ chart_data|json_script:"chart-values" }}
+
 <script>
-    // Get data passed from Django Views
-    const labels = {{ chart_labels|safe }};
-    const data = {{ chart_data|safe }};
+    // Grab data from the JSON script tags
+    const labels = JSON.parse(document.getElementById('labels-data').textContent);
+    const data = JSON.parse(document.getElementById('chart-values').textContent);
 
     const ctx = document.getElementById('myAreaChart');
 
-    new Chart(ctx, {
-        type: 'bar', // Change to 'line' or 'pie' if you want
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '# of Sessions',
-                data: data,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar', // Visualizes "statistiques" objective
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '# of Sessions',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
                 }
             }
+        }); // Properly closed the Chart object
+    }
+
+    // 4. Function for Image Export
+    function exportAsImage() {
+        const element = document.querySelector(".card-body"); 
+        if (element) {
+            html2canvas(element).then(canvas => {
+                let link = document.createElement("a");
+                link.download = "university_report.png";
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            });
         }
-    });
+    }
 </script>
 {% endblock %}
