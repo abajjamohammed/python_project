@@ -78,11 +78,19 @@ def teacher_timetable(request):
 def student_timetable(request):
     """The dedicated full-page schedule for students"""
     sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
+    next_class = sessions.first()
     
     context = {
         'sessions': sessions,
-        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
-        'hours': [(8, 10), (10, 12), (14, 16)]
+        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        'hours': [8, 10, 14],
+        'next_class': next_class,
+        'student_group': request.user.student_group,
+        'time_slots': [
+            {'label': '(8, 10):00', 'start': 8},
+            {'label': '(10, 12):00', 'start': 10},
+            {'label': '(14, 16):00', 'start': 14},
+        ]
     }
     return render(request, 'scheduler/student_timetable.html', context)
 
@@ -289,19 +297,17 @@ def teacher_dashboard(request):
 
 #Added by Adjii:
 def student_dashboard(request):
-    # 1. Get all sessions for Mohammed's group
+    # Filter for Mohammed's group
     sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
     
-    # 2. Get the "Next Class" (Simplified: the first session found)
-    next_class = sessions.first() 
-
+    # Context for the dashboard
     context = {
         'sessions': sessions,
-        'next_class': next_class,
-        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
-        'hours': [(8, 10), (10, 12), (14, 16)]
+        'next_class': sessions.first(),
+        'student_group': request.user.student_group,
+        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        'hours': [8, 9, 10, 11, 12, 14, 15, 16], # These must be integers to match session.start_hour
     }
-    # MAKE SURE THIS POINTS TO THE NEW HTML FILE YOU SHOWED ME
     return render(request, 'scheduler/student_dashboard.html', context)
 
 

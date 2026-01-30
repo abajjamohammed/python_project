@@ -15,6 +15,8 @@ class Room(models.Model):
     capacity = models.IntegerField()
     # Stores equipment as a comma-separated string or a new table
     equipment = models.CharField(max_length=255) 
+    def __str__(self):
+        return self.name
 
 # replaces courses.py
 class Course(models.Model):
@@ -23,6 +25,8 @@ class Course(models.Model):
     group_name = models.CharField(max_length=50)
     student_count = models.IntegerField()
     equipment_needed = models.CharField(max_length=255)
+    def __str__(self):
+        return self.name
 
 # replaces schedule.py "session" logic
 class ScheduledSession(models.Model):
@@ -31,7 +35,8 @@ class ScheduledSession(models.Model):
     day = models.CharField(max_length=20)
     start_hour = models.IntegerField()
     end_hour = models.IntegerField()
-    
+    def __str__(self):
+        return f"{self.course.name} - {self.day} ({self.start_hour}:00)"
     
 #added those :mohammed 25/01
 class ReservationRequest(models.Model):

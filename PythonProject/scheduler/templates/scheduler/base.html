@@ -314,7 +314,14 @@
         <!-- Top White Navbar -->
         <nav class="top-navbar">
             <div class="page-title">
-                System Overview
+                {% if user.role == 'A' %}
+                    System Overview
+                    {% elif user.role == 'T' %}
+                    Teacher Portal
+                    {% elif user.role == 'S' %}
+                    Student Dashboard
+
+                {% endif %}
             </div>
 
             <div class="d-flex align-items-center gap-4">

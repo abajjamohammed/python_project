@@ -1,48 +1,102 @@
-{% extends 'scheduler/base.html' %} {% block content %}
-<style>
-    .live-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    border-left: 5px solid #3b82f6; /* Blue stripe */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-.uppercase {
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.7rem;
-}
-</style>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12 mb-4">
-            <h3 class="fw-bold">Welcome back, {{ user.username }}!</h3>
-            <p class="text-muted">Here is your schedule for today.</p>
-        </div>
+{% extends 'scheduler/base.html' %}
 
-        <div class="col-md-4 mb-4">
-            <div class="live-card">
-                <span class="text-primary fw-bold small uppercase">Next Class</span>
-                <h4 class="mt-2">{{ next_class.course.name|default:"No classes next" }}</h4>
-                <p class="text-muted mb-0"><i class="far fa-clock"></i> {{ next_class.start_hour }}:00</p>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-4">
-            <div class="live-card" style="border-left-color: #10b981;">
-                <span class="text-success fw-bold small uppercase">Attendance</span>
-                <h4 class="mt-2">94%</h4>
-                <p class="text-muted mb-0">Well done!</p>
-            </div>
-        </div>
+{% block content %}
+<div class="container-fluid py-4" style="background-color: #f8f9fa;">
+    <div class="mb-4">
+        <h2 class="fw-bold">Welcome back, {{ user.username }}</h2>
+        <p class="text-muted">You have classes scheduled for your group: <strong>{{ student_group }}</strong></p>
     </div>
 
-    <div class="card border-0 shadow-sm mt-2">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 fw-bold">My Weekly Schedule</h5>
-        </div>
-        <div class="card-body">
+    <div class="row">
+        <div class="col-md-8">
+            <h5 class="fw-bold mb-3">Today's Live View</h5>
+            <div class="row mb-5">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm p-3 border-start border-primary border-4">
+                        <span class="text-primary small fw-bold">IN PROGRESS</span>
+                        <h4 class="mt-2 mb-1">{{ next_class.course.name|default:"No Class Now" }}</h4>
+                        <p class="text-muted small">Prof. {{ next_class.course.teacher.username }}</p>
+                        <div class="d-flex gap-3 text-muted small mt-3">
+                            <span><i class="far fa-clock"></i> {{ next_class.start_hour }}:00 - {{ next_class.end_hour }}:00</span>
+                            <span><i class="fas fa-map-marker-alt"></i> Room {{ next_class.room.name }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Time-Table</h5>
+                    <span class="badge bg-light text-dark border">{{ student_group }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table mb-0 text-center table-bordered border-light">
+                            <thead class="bg-light text-muted small">
+                                <tr>
+                                    <th>TIME</th>
+                                    {% for day in days %}<th>{{ day|upper }}</th>{% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for hour in hours %}
+                                <tr>
+                                    <td class="align-middle fw-bold text-muted small py-4">{{ hour }}:00</td>
+                                    {% for day in days %}
+                                    <td class="p-2" style="width: 18%; min-height: 80px; background-color: #fafafa;">
+                                        {% for session in sessions %}
+                                            {% if session.day == day and session.start_hour == hour %}                                                
+                                                <div class="p-2 rounded shadow-sm text-start" 
+                                                    style="background-color: #e7f0ff; border-left: 4px solid #0d6efd;">
+                                                    <div class="fw-bold small text-primary">{{ session.course.name }}</div>
+                                                    <div class="extra-small text-muted">Room {{ session.room.name }}</div>
+                                                    <div class="extra-small fw-bold mt-1" style="font-size: 0.65rem;">GROUP: {{ student_group }}</div>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-bolt text-danger"></i> Real-time Updates</h6>
+                </div>
+                <div class="card-body">
+                    <div class="update-item mb-3 p-2 bg-light rounded">
+                        <small class="text-danger fw-bold">Room Change</small>
+                        <p class="mb-0 small">Math moved to Room 102</p>
+                    </div>
+                    <div class="update-item p-2 bg-light rounded">
+                        <small class="text-success fw-bold">New Material</small>
+                        <p class="mb-0 small">Python Lecture Notes uploaded</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 bg-primary text-white shadow-sm">
+                <div class="card-body">
+                    <h6 class="small uppercase opacity-75">Attendance Rate</h6>
+                    <h2 class="fw-bold">94%</h2>
+                    <div class="progress bg-white bg-opacity-25 mt-3" style="height: 8px;">
+                        <div class="progress-bar bg-white" style="width: 94%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .extra-small { font-size: 0.75rem; }
+    .uppercase { text-transform: uppercase; letter-spacing: 1px; }
+</style>
 {% endblock %}
