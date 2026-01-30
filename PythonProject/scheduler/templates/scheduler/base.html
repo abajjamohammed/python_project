@@ -62,44 +62,33 @@
                     <h4><i class="fas fa-university"></i> ALPHAGO University</h4>
                 </div>
                 
-                <ul class="nav flex-column mt-2">
-                    <!-- Dashboard Link -->
-                    <li class="nav-item">
-                        <a href="#" class="nav-link active">
-                            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                        </a>
-                    </li>
-                    
-                    <!-- Timetable Link -->
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="fas fa-calendar-alt me-2"></i> Timetable
-                        </a>
-                    </li>
-                    
-                    <!-- Professors Link -->
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="fas fa-chalkboard-teacher me-2"></i> Teachers
-                        </a>
-                    </li>
-
-                     <!-- Students Link -->
-                     <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="fas fa-user-graduate me-2"></i> Students
-                        </a>
-                    </li>
+               <ul class="nav flex-column mt-2">
+    <!-- Dashboard -->
+    <li class="nav-item">
+        <!-- usage of 'dashboard' matches the name we gave in urls.py -->
+        <a href="{% url 'dashboard' %}" class="nav-link active">
+            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+        </a>
+    </li>
+    
+    <!-- Timetable -->
+    <li class="nav-item">
+        <a href="{% url 'timetable' %}" class="nav-link">
+            <i class="fas fa-calendar-alt me-2"></i> Timetable
+        </a>
+    </li>
+    
+    <!-- Teachers (We will build this next!) -->
+    <li class="nav-item">
+        <a href="{% url 'teacher_list' %}" class="nav-link">
+            <i class="fas fa-chalkboard-teacher me-2"></i> Teachers
+        </a>
+    </li>
 
                     <!-- Logout -->
                     <li class="nav-item mt-5">
-                        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
-                            {% csrf_token %}
-                        </form>
-                        <a href="javascript:void(0)" 
-                        onclick="document.getElementById('logout-form').submit();" 
-                        class="nav-link text-danger">
-                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        <a href="#" class="nav-link text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
                         </a>
                     </li>
                 </ul>
