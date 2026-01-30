@@ -8,7 +8,7 @@ from .forms import CourseForm
 from django.shortcuts import redirect
 import json  # <--- CRITICAL: You need this for the calendar data
 from .forms import TeacherForm # Import the new form
-
+from django.contrib.auth import logout
 from .utils import TimetableAlgorithm
 from django.http import HttpResponse
 import csv
@@ -275,3 +275,8 @@ def export_timetable_csv(request):
         ])
 
     return response
+
+#for the logout
+def custom_logout(request):
+    logout(request)
+    return redirect('login')

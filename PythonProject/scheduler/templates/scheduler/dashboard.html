@@ -2,183 +2,331 @@
 
 {% block content %}
 <style>
-/* PRINTING CSS: Only runs when generating a PDF or Printing */
-@media print {
-    /* Hide everything except the main report content */
-    .sidebar, .navbar, .btn, .quick-actions-card, .logout-link, .dropdown-toggle {
-        display: none !important;
+    /* --- DASHBOARD SPECIFIC CSS --- */
+    
+    /* Icon Boxes (The colored squares) */
+    .icon-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
     }
 
-    /* Expand the main content to fill the page */
-    .main-content, .container-fluid, .card {
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        border: none !important;
-        box-shadow: none !important;
+    /* Custom Colors from Screenshot */
+    .bg-blue-light { background-color: #e0e7ff; color: #4338ca; }
+    .bg-purple-light { background-color: #f3e8ff; color: #7e22ce; }
+    .bg-green-light { background-color: #dcfce7; color: #15803d; }
+    .bg-orange-light { background-color: #ffedd5; color: #c2410c; }
+
+    /* Cards */
+    .dashboard-card {
+        background: white;
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    /* Quick Action Items */
+    .action-item {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-radius: 12px;
+        background-color: #f8fafc;
+        border: 1px solid #f1f5f9;
+        text-decoration: none;
+        color: #334155;
+        transition: all 0.2s;
+        margin-bottom: 12px;
+    }
+    
+    .action-item:hover {
+        background-color: #ffffff;
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
     }
 
-    /* Force the chart to be visible */
-    canvas {
-        max-width: 100% !important;
-        height: auto !important;
+    .action-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #3b82f6;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        margin-right: 15px;
     }
 
-    /* Add a professional header to the PDF */
-    body::before {
-        content: "ALPHAGO UNIVERSITY - ACADEMIC SCHEDULE REPORT";
-        display: block;
-        text-align: center;
-        font-size: 22px;
-        font-weight: bold;
-        margin-bottom: 30px;
-        color: #333;
+    /* Table Styling */
+    .conflict-table thead th {
+        background-color: #f8fafc;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 12px 24px;
     }
-}
+    
+    .conflict-table tbody td {
+        padding: 16px 24px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+    }
+
+    /* Badges */
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .badge-conflict { background: #fee2e2; color: #991b1b; }
+    .badge-overlap { background: #fef3c7; color: #92400e; }
+    
+    .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot-red { background: #ef4444; }
+    .dot-orange { background: #f59e0b; }
+
 </style>
 
-
-<div class="container-fluid">
+<div class="container-fluid px-4 py-4">
     
-    <!-- Title -->
-    <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
-        <h2 class="h3 mb-0 text-gray-800">Administrator Dashboard</h2>
-       <div class="dropdown">
-        <button class="btn btn-primary dropdown-toggle" type="button" id="genReportBtn" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-file-download"></i> Generate Report
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="genReportBtn">
-            <li><a class="dropdown-item" href="{% url 'export_timetable_csv' %}">
-                <i class="fas fa-file-csv text-success"></i> Export to Excel (.csv)
-            </a></li>
-
-            <li><a class="dropdown-item" href="#" onclick="window.print(); return false;">
-                <i class="fas fa-file-pdf text-danger"></i> Export to PDF (.pdf)
-            </a></li>
-
-            <li><a class="dropdown-item" href="#" onclick="exportAsImage();">
-                <i class="fas fa-image text-info"></i> Save as Image (.png)
-            </a></li>
-        </ul>
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">System Overview</h3>
+            <p class="text-muted mb-0">Welcome back, Admin</p>
+        </div>
+        
+        <!-- Generate Report Dropdown -->
+        <div class="dropdown">
+            <button class="btn btn-primary d-flex align-items-center gap-2 px-4 py-2 rounded-3 shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <span class="material-symbols-outlined" style="font-size: 20px;">download</span>
+                Generate Report
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2 rounded-3">
+                <li><a class="dropdown-item py-2" href="{% url 'export_timetable_csv' %}"><i class="fas fa-file-csv text-success me-2"></i> Export to Excel</a></li>
+                <li><a class="dropdown-item py-2" href="#" onclick="window.print()"><i class="fas fa-file-pdf text-danger me-2"></i> Print PDF</a></li>
+                <li><a class="dropdown-item py-2" href="#" onclick="exportAsImage()"><i class="fas fa-image text-info me-2"></i> Save Image</a></li>
+            </ul>
+        </div>
     </div>
-</div>
 
-<div class="d-none d-print-block text-center mb-4">
-    <h1 class="h2">ALPHAGO UNIVERSITY</h1>
-    <h2 class="h4 text-muted">Administrator Schedule Report</h2>
-    <hr>
-</div>
+    <!-- 1. KPI CARDS ROW -->
+    <div class="row g-4 mb-5">
+        
+        <!-- Students -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card p-4 h-100">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="icon-box bg-blue-light">
+                        <span class="material-symbols-outlined">school</span>
+                    </div>
+                    <div>
+                        <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem;">Total Students</p>
+                        <h2 class="fw-bold mb-0 text-dark">{{ total_students }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <!-- 1. THE CARDS ROW (KPIs) -->
-    <div class="row">
+        <!-- Teachers -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card p-4 h-100">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="icon-box bg-purple-light">
+                        <span class="material-symbols-outlined">record_voice_over</span>
+                    </div>
+                    <div>
+                        <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem;">Teachers</p>
+                        <h2 class="fw-bold mb-0 text-dark">{{ total_teachers }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <!-- Card 1: Total Students -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2 border-0 border-start border-primary border-4">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Students</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_students }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
+        <!-- Pending Requests -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card p-4 h-100">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="icon-box bg-green-light">
+                        <span class="material-symbols-outlined">verified</span>
+                    </div>
+                    <div>
+                        <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem;">Pending Requests</p>
+                        <div class="d-flex align-items-center gap-2">
+                            <h2 class="fw-bold mb-0 text-dark">{{ pending_requests }}</h2>
+                            {% if pending_requests == 0 %}
+                            <span class="badge bg-success-subtle text-success rounded-pill px-2">All clear</span>
+                            {% else %}
+                            <span class="badge bg-warning-subtle text-warning rounded-pill px-2">Action needed</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Card 2: Total Teachers -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card shadow h-100 py-2 border-0 border-start border-success border-4">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Teachers</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_teachers }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-chalkboard-teacher fa-2x text-gray-300"></i>
-                        </div>
+        <!-- Rooms -->
+        <div class="col-xl-3 col-md-6">
+            <div class="dashboard-card p-4 h-100">
+                <div class="d-flex align-items-center gap-4">
+                    <div class="icon-box bg-orange-light">
+                        <span class="material-symbols-outlined">meeting_room</span>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 3: Pending Requests (Alerts) -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card shadow h-100 py-2 border-0 border-start border-warning border-4">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Requests</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_requests }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-bell fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 4: Total Rooms -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card shadow h-100 py-2 border-0 border-start border-info border-4">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Rooms</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_rooms }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-building fa-2x text-gray-300"></i>
-                        </div>
+                    <div>
+                        <p class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.75rem;">Total Rooms</p>
+                        <h2 class="fw-bold mb-0 text-dark">{{ total_rooms }}</h2>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 2. THE CHART SECTION -->
-    <div class="row">
-        <div class="col-xl-8 col-lg-7">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Weekly Session Distribution</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area">
-                        <!-- Canvas for Chart.js -->
-                        <canvas id="myAreaChart"></canvas>
+    <!-- 2. MAIN SECTION (Chart + Quick Actions) -->
+    <div class="row g-4 mb-5">
+        
+        <!-- CHART SECTION -->
+        <div class="col-lg-8">
+            <div class="dashboard-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="fw-bold mb-1">Weekly Session Distribution</h5>
+                        <p class="text-muted small mb-0">Average scheduled hours per day</p>
                     </div>
+                    <select class="form-select form-select-sm w-auto border-0 bg-light fw-bold text-secondary">
+                        <option>Current Week</option>
+                        <option>Last Week</option>
+                    </select>
+                </div>
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="myAreaChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Side Panel: Quick Actions -->
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
-                </div>
-                <div class="card-body">
-                    <p>Manage the university resources efficiently.</p>
-                    <a href="{% url 'add_course' %}" class="btn btn-primary w-100 mb-2">Add New Course</a>
-                    <a href="{% url 'approve_reservations' %}" class="btn btn-success btn-block mb-2 w-100">Approve Reservations</a>
-                    <a href="#" class="btn btn-info btn-block w-100">View Room Status</a>
-                </div>
+        <!-- QUICK ACTIONS -->
+        <div class="col-lg-4">
+            <div class="dashboard-card p-4 h-100">
+                <h5 class="fw-bold mb-4">Quick Actions</h5>
+                
+                <!-- Action 1 -->
+                <a href="{% url 'add_course' %}" class="action-item">
+                    <div class="action-icon text-primary">
+                        <span class="material-symbols-outlined">add_circle</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">Add New Course</div>
+                        <div class="small text-muted">Create academic entries</div>
+                    </div>
+                    <span class="material-symbols-outlined text-muted">chevron_right</span>
+                </a>
+
+                <!-- Action 2 -->
+                <a href="{% url 'approve_reservations' %}" class="action-item">
+                    <div class="action-icon text-purple-600" style="color: #7e22ce;">
+                        <span class="material-symbols-outlined">how_to_reg</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">Approve Reservations</div>
+                        <div class="small text-muted">Manage room requests</div>
+                    </div>
+                    {% if pending_requests > 0 %}
+                    <span class="badge bg-danger rounded-pill">{{ pending_requests }}</span>
+                    {% else %}
+                    <span class="material-symbols-outlined text-muted">chevron_right</span>
+                    {% endif %}
+                </a>
+
+                <!-- Action 3 -->
+                <a href="#" class="action-item">
+                    <div class="action-icon text-teal-600" style="color: #0d9488;">
+                        <span class="material-symbols-outlined">grid_view</span>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">View Room Status</div>
+                        <div class="small text-muted">Live occupancy map</div>
+                    </div>
+                    <span class="material-symbols-outlined text-muted">chevron_right</span>
+                </a>
+                
+                <!-- Generate Schedule Action -->
+                <a href="{% url 'generate_timetable' %}" class="btn btn-primary w-100 mt-3 py-2 fw-bold shadow-sm">
+                    <i class="fas fa-magic me-2"></i> Generate Timetables
+                </a>
             </div>
         </div>
     </div>
 
-</div>
-{% endblock %}
-<!-- 3. JAVASCRIPT FOR THE CHART -->
-<!--Adjii: I added the curly braces in the js so vs code can read it the django way -->
+    <!-- 3. CONFLICTS TABLE (Static Mockup for visual completeness as per screenshot) -->
+    <div class="dashboard-card overflow-hidden mb-4">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Recent Room Conflicts</h5>
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">System Monitoring Active</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table conflict-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Room ID</th>
+                        <th>Conflicting Courses</th>
+                        <th>Time Slot</th>
+                        <th>Status</th>
+                        <th>Action Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="material-symbols-outlined text-muted" style="font-size: 18px;">meeting_room</span>
+                                <span class="fw-bold text-dark">Room 302</span>
+                            </div>
+                        </td>
+                        <td class="text-secondary">CS101 vs. MATH204</td>
+                        <td class="text-secondary">Mon, 10:00 AM - 11:30 AM</td>
+                        <td><span class="status-badge badge-conflict"><div class="dot dot-red me-1"></div>High Conflict</span></td>
+                        <td><a href="#" class="text-primary fw-bold text-decoration-none">Reassign Room</a></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="material-symbols-outlined text-muted" style="font-size: 18px;">meeting_room</span>
+                                <span class="fw-bold text-dark">Lab 01</span>
+                            </div>
+                        </td>
+                        <td class="text-secondary">BIO Lab vs. CHEM Prep</td>
+                        <td class="text-secondary">Wed, 02:00 PM - 04:00 PM</td>
+                        <td><span class="status-badge badge-overlap"><div class="dot dot-orange me-1"></div>Overlapping</span></td>
+                        <td><a href="#" class="text-primary fw-bold text-decoration-none">Adjust Time</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Empty State (Hidden if data exists) -->
+        <div class="text-center py-5 d-none"> <!-- Remove d-none to test empty state -->
+            <span class="material-symbols-outlined text-success" style="font-size: 48px;">task_alt</span>
+            <p class="text-muted mt-2">No other conflicts detected for this week.</p>
+        </div>
+    </div>
 
-{% block scripts %}  
+</div>
+
+<!-- JAVASCRIPT FOR CHART & EXPORT -->
+{% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -186,23 +334,21 @@
 {{ chart_data|json_script:"chart-values" }}
 
 <script>
-    // Grab data from the JSON script tags
     const labels = JSON.parse(document.getElementById('labels-data').textContent);
     const data = JSON.parse(document.getElementById('chart-values').textContent);
-
     const ctx = document.getElementById('myAreaChart');
 
     if (ctx) {
         new Chart(ctx, {
-            type: 'bar', // Visualizes "statistiques" objective
+            type: 'bar',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: '# of Sessions',
+                    label: 'Sessions',
                     data: data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
+                    backgroundColor: '#3b82f6', // Bright Blue
+                    borderRadius: 4,
+                    barThickness: 40,
                 }]
             },
             options: {
@@ -211,24 +357,32 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { stepSize: 1 }
+                        grid: { borderDash: [5, 5], color: '#f1f5f9' },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        border: { display: false }
                     }
+                },
+                plugins: {
+                    legend: { display: false }
                 }
             }
-        }); // Properly closed the Chart object
+        });
     }
 
-    // 4. Function for Image Export
     function exportAsImage() {
-        const element = document.querySelector(".card-body"); 
+        const element = document.querySelector(".container-fluid");
         if (element) {
             html2canvas(element).then(canvas => {
                 let link = document.createElement("a");
-                link.download = "university_report.png";
+                link.download = "dashboard_report.png";
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             });
         }
     }
 </script>
+{% endblock %}
 {% endblock %}

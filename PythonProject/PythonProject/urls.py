@@ -30,7 +30,7 @@ urlpatterns = [
 
     # 2. Authentication
     path('login/', auth_views.LoginView.as_view(template_name='scheduler/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    path('logout/', views.custom_logout, name='logout'),
 
     # 3. Your New Features (Course & Teachers)
     path('add-course/', views.add_course, name='add_course'),
@@ -45,7 +45,7 @@ urlpatterns = [
     path('reservation/new/', views.make_reservation, name='make_reservation'),
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
-    path('generate-schedule/', views.generate_timetable, name='generate_schedule'),
+    path('generate_timetable/', views.generate_timetable, name='generate_timetable'),
     #---Adjii's additions for generate schedule--
     path('export/csv/', views.export_timetable_csv, name='export_timetable_csv'),
 ]

@@ -3,121 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>University Timetable System</title>
+    <title>ALPHAGO Admin Console</title>
     
-    <!-- 1. BOOTSTRAP CSS (Makes it look professional instantly) -->
+    <!-- 1. FONTS (Poppins for modern look) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 2. BOOTSTRAP 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- 2. FONT AWESOME (For icons like 📅, 🎓, 🏫) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 3. ICONS (FontAwesome + Material Symbols like the screenshot) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     
     <style>
-        /* Custom Styling */
-        body { 
-            background-color: #f4f6f9; /* Light Grey Background */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        /* The Sidebar Styling */
-        .sidebar { 
-            min-height: 100vh; 
-            background: #2c3e50; /* Navy Blue */
-            color: white; 
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar-header {
-            padding: 20px;
-            background: #1a252f;
-            text-align: center;
+        :root {
+            --sidebar-bg: #0f172a; /* Deep Navy from screenshot */
+            --sidebar-width: 260px;
+            --primary-color: #3b82f6; /* Bright Blue */
+            --active-bg: #1e293b;
+            --text-muted: #94a3b8;
         }
 
-        .nav-link { 
-            color: #bdc3c7; 
-            padding: 15px 20px;
+        body {
+            background-color: #f3f4f6; /* Light gray background */
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- SIDEBAR SETUP --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            padding-top: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Brand Logo area */
+        .sidebar-brand {
+            padding: 0 25px 30px 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .brand-icon {
+            background: var(--primary-color);
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .brand-text {
+            font-weight: 700;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+        }
+        .brand-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: -3px;
+        }
+
+        /* Menu Links */
+        .nav-link {
+            color: var(--text-muted);
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover {
+            color: white;
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .nav-link.active {
+            color: white;
+            background-color: var(--primary-color);
+            border-left: 3px solid white; /* The active indicator */
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); /* Glow effect */
+        }
+
+        .nav-link i, .nav-link .material-symbols-outlined {
+            width: 24px;
+            text-align: center;
             font-size: 1.1rem;
         }
-        
-        /* Hover Effect for Menu Items */
-        .nav-link:hover, .nav-link.active { 
-            color: white; 
-            background: #34495e; 
-            border-left: 5px solid #3498db; /* Blue accent line */
+
+        /* Section Headers */
+        .nav-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #475569;
+            padding: 25px 25px 10px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- MAIN CONTENT WRAPPER --- */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- TOP NAVBAR --- */
+        .top-navbar {
+            height: 70px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+        }
+
+        .page-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        /* Search Bar (Visual only for now) */
+        .search-box {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 8px 15px;
+            width: 300px;
+            display: flex;
+            align-items: center;
+            color: #64748b;
+        }
+        .search-box input {
+            border: none;
+            background: transparent;
+            outline: none;
+            margin-left: 10px;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        /* User Profile */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-image: url('https://ui-avatars.com/api/?name={{ user.username }}&background=0D8ABC&color=fff');
+            background-size: cover;
+        }
+
+        /* --- CONTENT AREA --- */
+        .content-body {
+            padding: 30px;
         }
         
-        /* The Content Area */
-        .content-area {
-            padding: 30px;
+        /* Logout Button */
+        .logout-wrapper {
+            margin-top: auto; /* Pushes to bottom */
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .btn-logout {
+            color: #ef4444;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
         }
     </style>
 </head>
 <body>
 
-    <div class="container-fluid">
-        <div class="row">
-            
-            <!-- 3. THE SIDEBAR (Navigation) -->
-            <div class="col-md-2 sidebar p-0">
-                <div class="sidebar-header">
-                    <h4><i class="fas fa-university"></i> ALPHAGO University</h4>
-                </div>
-                
-               <ul class="nav flex-column mt-2">
-    <!-- Dashboard -->
-    <li class="nav-item">
-        <!-- usage of 'dashboard' matches the name we gave in urls.py -->
-        <a href="{% url 'dashboard' %}" class="nav-link active">
-            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-        </a>
-    </li>
-    
-    <!-- Timetable -->
-    <li class="nav-item">
-        <a href="{% url 'timetable' %}" class="nav-link">
-            <i class="fas fa-calendar-alt me-2"></i> Timetable
-        </a>
-    </li>
-    
-    <!-- Teachers (We will build this next!) -->
-    <li class="nav-item">
-        <a href="{% url 'teacher_list' %}" class="nav-link">
-            <i class="fas fa-chalkboard-teacher me-2"></i> Teachers
-        </a>
-    </li>
-
-                    <!-- Logout -->
-                    <li class="nav-item mt-5">
-                        <a href="#" class="nav-link text-danger">
-                            <i class="fas fa-sign-out-alt me-2"></i> Logout
-                        </a>
-                    </li>
-                </ul>
+    <!-- 1. LEFT SIDEBAR -->
+    <aside class="sidebar">
+        <!-- Brand -->
+        <a href="#" class="sidebar-brand">
+            <div class="brand-icon">
+                <i class="fas fa-graduation-cap"></i>
             </div>
+            <div>
+                <div class="brand-text">ALPHAGO</div>
+                <div class="brand-sub">Admin Console</div>
+            </div>
+        </a>
+
+        <!-- Menu Links -->
+        <div class="d-flex flex-column h-100">
             
-            <!-- 4. THE MAIN CONTENT (This changes per page) -->
-            <div class="col-md-10 content-area">
-                <!-- Top Navbar for User Profile -->
-                <div class="d-flex justify-content-end mb-4">
-                    <div class="dropdown">
-                        <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle"></i> Admin User
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Profile</a></li>
-                            <li><a class="dropdown-item" href="#">Settings</a></li>
-                        </ul>
+            <!-- Global Link -->
+            <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+
+            <!-- ADMIN MENU -->
+            {% if request.user.role != 'Teacher' and request.user.role != 'Student' %}
+                <div class="nav-header">Management</div>
+                
+                <!-- Here are the pages you thought were missing! -->
+                <a href="{% url 'timetable' %}" class="nav-link {% if 'timetable' in request.path %}active{% endif %}">
+                    <span class="material-symbols-outlined">calendar_month</span>
+                    Schedules
+                </a>
+
+                <a href="{% url 'teacher_list' %}" class="nav-link {% if 'teachers' in request.path %}active{% endif %}">
+                    <span class="material-symbols-outlined">group</span>
+                    Users (Teachers)
+                </a>
+
+                <a href="{% url 'add_course' %}" class="nav-link {% if 'course' in request.path %}active{% endif %}">
+                    <span class="material-symbols-outlined">library_books</span>
+                    Courses
+                </a>
+                
+                <a href="{% url 'approve_reservations' %}" class="nav-link {% if 'reservations' in request.path %}active{% endif %}">
+                    <span class="material-symbols-outlined">fact_check</span>
+                    Requests
+                </a>
+                
+                <div class="nav-header">System</div>
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">meeting_room</span>
+                    Rooms
+                </a>
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+            {% endif %}
+
+            <!-- TEACHER MENU -->
+            {% if request.user.role == 'T' %}
+                <div class="nav-header">Faculty Tools</div>
+                <a href="{% url 'teacher_dashboard' %}" class="nav-link">
+                    <span class="material-symbols-outlined">event_note</span>
+                    My Schedule
+                </a>
+                <a href="{% url 'make_reservation' %}" class="nav-link">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    Book Room
+                </a>
+            {% endif %}
+
+            <!-- STUDENT MENU -->
+            {% if request.user.role == 'S' %}
+                <div class="nav-header">Student Area</div>
+                <a href="{% url 'student_dashboard' %}" class="nav-link">
+                    <span class="material-symbols-outlined">school</span>
+                    My Classes
+                </a>
+            {% endif %}
+
+            <!-- Logout at Bottom -->
+            <div class="logout-wrapper">
+                <a href="{% url 'logout' %}" class="btn-logout">
+                    <span class="material-symbols-outlined">logout</span>
+                    Logout
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 2. MAIN CONTENT -->
+    <div class="main-wrapper">
+        
+        <!-- Top White Navbar -->
+        <nav class="top-navbar">
+            <div class="page-title">
+                System Overview
+            </div>
+
+            <div class="d-flex align-items-center gap-4">
+                <!-- Fake Search Bar -->
+                <div class="search-box d-none d-md-flex">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">search</span>
+                    <input type="text" placeholder="Search resources...">
+                </div>
+
+                <div class="vr"></div> <!-- Vertical Divider -->
+
+                <!-- User Dropdown -->
+                <div class="dropdown">
+                    <div class="user-profile dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="text-end me-2 d-none d-sm-block">
+                            <div class="fw-bold text-dark" style="font-size: 0.9rem;">{{ user.username }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                {% if user.role == 'A' %}Super Admin{% elif user.role == 'T' %}Professor{% else %}Student{% endif %}
+                            </div>
+                        </div>
+                        <div class="avatar"></div>
                     </div>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-3">
+                        <li><h6 class="dropdown-header">Account</h6></li>
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
                 </div>
-
-                <!-- ⚠️ CRITICAL: This is where child pages inject their code -->
-                {% block content %}
-                {% endblock %}
-                
             </div>
+        </nav>
+
+        <!-- Dynamic Content Area -->
+        <div class="content-body">
+            
+            <!-- Alert Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Child Pages Inject Here -->
+            {% block content %}
+            {% endblock %}
         </div>
     </div>
 
-    <!-- Bootstrap JS (Required for Dropdowns/Popups) -->
+    <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Block for extra scripts (charts etc) -->
+    {% block scripts %}
+    {% endblock %}
 </body>
 </html>
