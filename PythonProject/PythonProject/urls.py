@@ -20,18 +20,21 @@ from django.contrib.auth import views as auth_views # Import Django Auth Views
 from scheduler import views
 
 urlpatterns = [
+    # 1. Admin & Dashboard (The Home Page)
     path('admin/', admin.site.urls),
-    
-    # Dashboard (Home)
     path('', views.admin_dashboard, name='dashboard'),
 
-    # Login Page (Using our custom template)
+    # 2. Authentication
     path('login/', auth_views.LoginView.as_view(template_name='scheduler/login.html'), name='login'),
-    
-    # Logout (Redirects to login page)
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 
-    # --- mohammmed's additions 
+    # 3. Your New Features (Course & Teachers)
+    path('add-course/', views.add_course, name='add_course'),
+    path('teachers/', views.teacher_list, name='teacher_list'),
+    path('timetable/', views.timetable_view, name='timetable'),
+    path('teachers/add/', views.add_teacher, name='add_teacher'),
+
+    # 4. Mohammed's Additions (Reservations)
     path('reservation/new/', views.make_reservation, name='make_reservation'),
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),

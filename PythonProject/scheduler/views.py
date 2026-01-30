@@ -5,6 +5,12 @@ from .models import Room, Course, ReservationRequest, User, ScheduledSession
 from django.db.models import Count
 from .forms import ReservationForm
 from django.shortcuts import render, redirect, get_object_or_404 # Vérifie que tu as tout ça
+from .forms import CourseForm
+from django.shortcuts import redirect
+import json  # <--- CRITICAL: You need this for the calendar data
+from .forms import TeacherForm # Import the new form
+
+
 
 @login_required  # <--- THIS PROTECTS THE VIEW
 def admin_dashboard(request):
@@ -81,3 +87,62 @@ def process_request(request, req_id, action):
         messages.error(request, "Réservation rejetée.")
     
     return redirect('approve_reservations')
+def teacher_list(request):
+    # Filter only users who are Teachers ('T')
+    teachers = User.objects.filter(role='T')
+    return render(request, 'scheduler/teacher_list.html', {'teachers': teachers})
+
+def add_course(request):
+    if request.method == 'POST':
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('dashboard') # Go back to dashboard after saving
+    else:
+        form = CourseForm()
+    
+    return render(request, 'scheduler/add_course.html', {'form': form})
+def timetable_view(request):
+    """
+    Displays the interactive calendar
+    """
+    sessions = ScheduledSession.objects.all()
+    events = []
+    
+    # Simple mapping to turn "Monday" into a date the calendar understands
+    # Let's pretend the week starts on Feb 5th, 2024 just for display purposes
+    day_mapping = {
+        "Monday": "05", "Lundi": "05",
+        "Tuesday": "06", "Mardi": "06",
+        "Wednesday": "07", "Mercredi": "07",
+        "Thursday": "08", "Jeudi": "08",
+        "Friday": "09", "Vendredi": "09"
+    }
+    
+    for session in sessions:
+        # Get the day number (default to 05 if not found)
+        day_num = day_mapping.get(session.day, "05")
+        
+        events.append({
+            'title': f"{session.course.name} ({session.room.name})",
+            # ISO Format: YYYY-MM-DDTHH:MM:SS
+            'start': f"2024-02-{day_num}T{session.start_hour:02d}:00:00",
+            'end': f"2024-02-{day_num}T{session.end_hour:02d}:00:00",
+            'color': '#3788d8' # Default Blue
+        })
+        
+    context = {
+        'events_json': json.dumps(events)
+    }
+    return render(request, 'scheduler/timetable.html', context)
+
+def add_teacher(request):
+    if request.method == 'POST':
+        form = TeacherForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('teacher_list') # Go back to the list
+    else:
+        form = TeacherForm()
+    
+    return render(request, 'scheduler/add_teacher.html', {'form': form})

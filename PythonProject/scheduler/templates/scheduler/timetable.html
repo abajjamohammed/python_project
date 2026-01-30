@@ -1,0 +1,67 @@
+{% extends 'scheduler/base.html' %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h4 class="m-0 font-weight-bold text-primary"><i class="fas fa-calendar-alt"></i> University Schedule</h4>
+        <div>
+            <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-print"></i> Print</button>
+            <button class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Session</button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <!-- This div is where the Javascript builds the calendar -->
+        <div id='calendar' class="p-4"></div>
+    </div>
+</div>
+
+<!-- FullCalendar JS Library -->
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek', // Show the week view by default
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            // IMPORTANT: Since our test data is hardcoded to Feb 2024 in views.py,
+            // we force the calendar to open on that date so you can see the events!
+            initialDate: '2024-02-05', 
+            
+            slotMinTime: '08:00:00', // School starts at 8 AM
+            slotMaxTime: '19:00:00', // School ends at 7 PM
+            hiddenDays: [0, 6],      // Hide Sunday (0) and Saturday (6)
+            allDaySlot: false,       // Hide the "All Day" row at the top
+            
+            events: {{ events_json|safe }}, // Load data from Django
+            
+            // Make it look nice
+            eventClick: function(info) {
+                alert('Course: ' + info.event.title);
+            }
+        });
+        
+        calendar.render();
+    });
+</script>
+
+<style>
+    /* Make the calendar text look cleaner */
+    .fc-event {
+        cursor: pointer;
+        border: none;
+    }
+    .fc-timegrid-slot {
+        height: 3em !important; /* Make rows taller */
+    }
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+</style>
+{% endblock %}

@@ -70,6 +70,7 @@ class TimetableAlgorithm:
         # INTELLIGENCE : On trie pour prendre la plus petite salle suffisante (pour ne pas gâcher un grand amphi)
         suitable_rooms.sort(key=lambda r: r.capacity)
         return suitable_rooms[0]
+    
 
     def generate_timetable(self):
         """
@@ -116,3 +117,5 @@ class TimetableAlgorithm:
                 print(f"❌ Impossible de placer : {course.name}")
         
         return unscheduled
+    
+    
