@@ -1,31 +1,287 @@
 {% extends 'scheduler/base.html' %}
+
 {% block content %}
+<style>
+    .reservation-form-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        padding: 2.5rem;
+        max-width: 650px;
+        margin: 0 auto;
+    }
 
-<div class="container" style="max-width: 600px;">
-    <h2>Faire une demande de salle</h2>
-    <form method="post">
-                {% csrf_token %}
+    .form-label {
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
 
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {{ form.non_field_errors }}
-                    </div>
-                {% endif %}
+    .form-control, .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
 
-                {% for field in form %}
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.errors %}
-                            <div class="text-danger small">
-                                {{ field.errors|striptags }}
-                            </div>
+    .form-control:focus, .form-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .submit-btn {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 0.875rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .page-header h2 {
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header p {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+
+    .icon-input-wrapper {
+        position: relative;
+    }
+
+    .icon-input-wrapper .material-symbols-outlined {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 20px;
+    }
+
+    .icon-input-wrapper .form-control,
+    .icon-input-wrapper .form-select {
+        padding-left: 42px;
+    }
+
+    .form-section {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-section-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        transition: color 0.2s;
+    }
+
+    .back-link:hover {
+        color: #3b82f6;
+    }
+</style>
+
+<div class="container-fluid px-4 py-4">
+    
+    <!-- Back Link -->
+    <a href="{% url 'teacher_dashboard' %}" class="back-link">
+        <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+        Back to Dashboard
+    </a>
+
+    <!-- Form Card -->
+    <div class="reservation-form-card">
+        
+        <!-- Header -->
+        <div class="page-header">
+            <div class="mb-3">
+                <span class="material-symbols-outlined text-primary" style="font-size: 48px;">meeting_room</span>
+            </div>
+            <h2>Room Reservation Request</h2>
+            <p>Fill out the form below to request a room reservation</p>
+        </div>
+
+        <!-- Error Messages -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger d-flex align-items-center" role="alert">
+                <span class="material-symbols-outlined me-2">error</span>
+                <div>{{ form.non_field_errors }}</div>
+            </div>
+        {% endif %}
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} d-flex align-items-center" role="alert">
+                    <span class="material-symbols-outlined me-2">
+                        {% if message.tags == 'success' %}check_circle{% else %}info{% endif %}
+                    </span>
+                    <div>{{ message }}</div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Form -->
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Room & Day Section -->
+            <div class="form-section">
+                <div class="form-section-title">Location & Date</div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">meeting_room</span>
+                            {{ form.room.label }}
+                        </label>
+                        <div class="icon-input-wrapper">
+                            <span class="material-symbols-outlined">meeting_room</span>
+                            {{ form.room }}
+                        </div>
+                        {% if form.room.errors %}
+                            <div class="text-danger small mt-1">{{ form.room.errors|striptags }}</div>
                         {% endif %}
                     </div>
-                {% endfor %}
 
-                <button type="submit" class="btn btn-primary w-100 mt-3">Envoyer la demande</button>
-            </form>
-        </div>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                            {{ form.day.label }}
+                        </label>
+                        <div class="icon-input-wrapper">
+                            <span class="material-symbols-outlined">calendar_today</span>
+                            {{ form.day }}
+                        </div>
+                        {% if form.day.errors %}
+                            <div class="text-danger small mt-1">{{ form.day.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Section -->
+            <div class="form-section">
+                <div class="form-section-title">Time Slot</div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                            {{ form.start_hour.label }}
+                        </label>
+                        <div class="icon-input-wrapper">
+                            <span class="material-symbols-outlined">schedule</span>
+                            {{ form.start_hour }}
+                        </div>
+                        {% if form.start_hour.errors %}
+                            <div class="text-danger small mt-1">{{ form.start_hour.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                            {{ form.end_hour.label }}
+                        </label>
+                        <div class="icon-input-wrapper">
+                            <span class="material-symbols-outlined">schedule</span>
+                            {{ form.end_hour }}
+                        </div>
+                        {% if form.end_hour.errors %}
+                            <div class="text-danger small mt-1">{{ form.end_hour.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason Section -->
+            <div class="form-section">
+                <div class="form-section-title">Additional Information</div>
+                
+                <div class="mb-0">
+                    <label class="form-label">
+                        <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">description</span>
+                        {{ form.reason.label }}
+                    </label>
+                    {{ form.reason }}
+                    {% if form.reason.errors %}
+                        <div class="text-danger small mt-1">{{ form.reason.errors|striptags }}</div>
+                    {% endif %}
+                    <small class="text-muted">Please provide a brief description of why you need this room.</small>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary submit-btn">
+                    <span class="material-symbols-outlined me-2" style="vertical-align: middle; font-size: 20px;">send</span>
+                    Submit Reservation Request
+                </button>
+                <a href="{% url 'teacher_dashboard' %}" class="btn btn-outline-secondary" style="border-radius: 10px; padding: 0.75rem;">
+                    Cancel
+                </a>
+            </div>
+        </form>
     </div>
-    {% endblock %}
+
+</div>
+
+<!-- Auto-add form-control class to form fields -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to Django form fields
+    const selects = document.querySelectorAll('select');
+    const inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+    
+    selects.forEach(select => {
+        if (!select.classList.contains('form-select')) {
+            select.classList.add('form-select');
+        }
+    });
+    
+    inputs.forEach(input => {
+        if (!input.classList.contains('form-control')) {
+            input.classList.add('form-control');
+        }
+    });
+});
+</script>
+{% endblock %}

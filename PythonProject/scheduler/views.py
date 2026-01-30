@@ -1,17 +1,16 @@
-from django.contrib.auth.decorators import login_required  # <--- NEW IMPORT
+from django.contrib.auth.decorators import login_required  
 from django.contrib import messages
 from .models import Room, Course, ReservationRequest, User, ScheduledSession
 from django.db.models import Count
-from .forms import ReservationForm
-from django.shortcuts import render, redirect, get_object_or_404 # Vérifie que tu as tout ça
-from .forms import CourseForm
-from django.shortcuts import redirect
-import json  # <--- CRITICAL: You need this for the calendar data
-from .forms import TeacherForm # Import the new form
+from .forms import ReservationForm, CourseForm, TeacherForm, RoomSearchForm
+from django.shortcuts import render, redirect, get_object_or_404 
+import json  
 from django.contrib.auth import logout
 from .utils import TimetableAlgorithm
 from django.http import HttpResponse
 import csv
+from datetime import datetime
+
 
 
 @login_required  # <--- THIS PROTECTS THE VIEW
@@ -61,6 +60,7 @@ def admin_dashboard(request):
     return render(request, 'scheduler/dashboard.html', context)
 #  (Member 2: Teachers, Students, & Generate)
 
+
 @login_required
 def teacher_timetable(request):
     # GOAL: Show courses assigned to the logged-in teacher (Sanae)
@@ -73,21 +73,19 @@ def teacher_timetable(request):
     return render(request, 'scheduler/teacher_timetable.html', context)
 
 
+
 @login_required
 def student_timetable(request):
-    # GOAL: Show sessions for the student's group (Mohammed)
-    current_group = request.user.student_group 
+    """The dedicated full-page schedule for students"""
+    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
     
-    if current_group:
-        group_sessions = ScheduledSession.objects.filter(course__group_name=current_group).order_by('day', 'start_hour')
-    else:
-        group_sessions = []
-
     context = {
-        'sessions': group_sessions,
-        'group_name': current_group
+        'sessions': sessions,
+        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        'hours': [(8, 10), (10, 12), (14, 16)]
     }
     return render(request, 'scheduler/student_timetable.html', context)
+
 
 
 @login_required
@@ -112,6 +110,8 @@ def generate_timetable(request):
 
     return redirect('admin_dashboard') # Replace with your actual admin dashboard name ?? COME BACK
 
+
+
 #added by mohammed# --- AJOUTS MEMBER 4 ---
 
 @login_required
@@ -132,12 +132,16 @@ def make_reservation(request):
     'form': form,
     'errors': form.errors 
 })
+    
+    
 
 @login_required
 def approve_reservations(request):
     """Liste les demandes en attente pour l'admin"""
     requests = ReservationRequest.objects.filter(status='PENDING')
     return render(request, 'scheduler/approve_reservations.html', {'requests': requests})
+
+
 
 @login_required
 def process_request(request, req_id, action):
@@ -169,39 +173,67 @@ def add_course(request):
         form = CourseForm()
     
     return render(request, 'scheduler/add_course.html', {'form': form})
+
+from datetime import datetime, timedelta # <--- Make sure you have this import at the top
+import json
+from django.shortcuts import render
+from .models import ScheduledSession
+
+
 def timetable_view(request):
     """
-    Displays the interactive calendar
+    Displays the interactive calendar with dynamic dates for the current week.
     """
     sessions = ScheduledSession.objects.all()
     events = []
     
-    # Simple mapping to turn "Monday" into a date the calendar understands
-    # Let's pretend the week starts on Feb 5th, 2024 just for display purposes
+    # 1. Calculate the Monday of the CURRENT week
+    today = datetime.now().date()
+    # weekday() returns 0 for Monday, 6 for Sunday. 
+    # We subtract the current weekday number from today to get back to Monday.
+    monday_date = today - timedelta(days=today.weekday())
+
+    # 2. Dynamic Mapping: Map string days to Real Dates for this week
+    # If Monday is Jan 26th, Tuesday will be Jan 27th, etc.
     day_mapping = {
-        "Monday": "05", "Lundi": "05",
-        "Tuesday": "06", "Mardi": "06",
-        "Wednesday": "07", "Mercredi": "07",
-        "Thursday": "08", "Jeudi": "08",
-        "Friday": "09", "Vendredi": "09"
+        "Monday":    monday_date,
+        "Tuesday":   monday_date + timedelta(days=1),
+        "Wednesday": monday_date + timedelta(days=2),
+        "Thursday":  monday_date + timedelta(days=3),
+        "Friday":    monday_date + timedelta(days=4),
+        "Saturday":  monday_date + timedelta(days=5),
+        "Sunday":    monday_date + timedelta(days=6),
+        # Add French mapping just in case your DB has French values
+        "Lundi":     monday_date,
+        "Mardi":     monday_date + timedelta(days=1),
+        "Mercredi":  monday_date + timedelta(days=2),
+        "Jeudi":     monday_date + timedelta(days=3),
+        "Vendredi":  monday_date + timedelta(days=4),
     }
     
     for session in sessions:
-        # Get the day number (default to 05 if not found)
-        day_num = day_mapping.get(session.day, "05")
+        # Get the real date object for the session's day name
+        session_date = day_mapping.get(session.day)
         
-        events.append({
-            'title': f"{session.course.name} ({session.room.name})",
-            # ISO Format: YYYY-MM-DDTHH:MM:SS
-            'start': f"2024-02-{day_num}T{session.start_hour:02d}:00:00",
-            'end': f"2024-02-{day_num}T{session.end_hour:02d}:00:00",
-            'color': '#3788d8' # Default Blue
-        })
-        
+        if session_date:
+            # Format date as string: "2026-01-26"
+            date_str = session_date.strftime('%Y-%m-%d')
+            
+            events.append({
+                'title': f"{session.course.name} ({session.room.name})",
+                # ISO Format: YYYY-MM-DDTHH:MM:SS
+                'start': f"{date_str}T{session.start_hour:02d}:00:00",
+                'end': f"{date_str}T{session.end_hour:02d}:00:00",
+                'color': '#3788d8' # Default Blue
+            })
+            
     context = {
-        'events_json': json.dumps(events)
+        'events_json': json.dumps(events),
+        # Pass the calculated Monday date to the template
+        'start_date': monday_date.strftime('%Y-%m-%d') 
     }
     return render(request, 'scheduler/timetable.html', context)
+
 
 def add_teacher(request):
     if request.method == 'POST':
@@ -213,26 +245,63 @@ def add_teacher(request):
         form = TeacherForm()
     
     return render(request, 'scheduler/add_teacher.html', {'form': form})
-#Added by Adjii:
+
+
+
+
+@login_required
 def teacher_dashboard(request):
-    # Prof sees her specific courses and her requests (Adjii's addition)
-    sessions = ScheduledSession.objects.filter(course__teacher=request.user)
-    my_reqs = ReservationRequest.objects.filter(teacher=request.user)
+    # Get teacher's sessions
+    sessions = ScheduledSession.objects.filter(course__teacher=request.user).select_related('course', 'room')
+    
+    # Get today's sessions
+    today = datetime.now().strftime('%A')  # Gets day name like "Monday"
+    # Handle French day names if you're using them
+    day_mapping = {
+        'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi',
+        'Thursday': 'Jeudi', 'Friday': 'Vendredi'
+    }
+    today_french = day_mapping.get(today, today)
+    
+    todays_sessions = sessions.filter(day=today_french)
+    
+    # Get reservation requests
+    my_reqs = ReservationRequest.objects.filter(teacher=request.user).order_by('-id')
+    
+    # Calculate stats
+    total_courses = sessions.values('course').distinct().count()
+    weekly_hours = sum([(s.end_hour - s.start_hour) for s in sessions])
+    pending_requests_count = my_reqs.filter(status='PENDING').count()
+    
     context = {
         'sessions': sessions,
+        'todays_sessions': todays_sessions,
+        'todays_sessions_count': todays_sessions.count(),
         'my_reqs': my_reqs,
-        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
-        'hours': [(8, 10), (10, 12), (14, 16)]
+        'total_courses': total_courses,
+        'weekly_hours': weekly_hours,
+        'pending_requests_count': pending_requests_count,
+        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        'hours': [(8, 10), (10, 12), (14, 16), (16, 18)]
     }
     return render(request, 'scheduler/teacher_dashboard.html', context)
+    return render(request, 'scheduler/teacher_dashboard.html', context)
+
+#Added by Adjii:
 def student_dashboard(request):
-    #Student see available sessions for his own group (Adjii's addition)
+    # 1. Get all sessions for Mohammed's group
     sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
+    
+    # 2. Get the "Next Class" (Simplified: the first session found)
+    next_class = sessions.first() 
+
     context = {
         'sessions': sessions,
+        'next_class': next_class,
         'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
         'hours': [(8, 10), (10, 12), (14, 16)]
     }
+    # MAKE SURE THIS POINTS TO THE NEW HTML FILE YOU SHOWED ME
     return render(request, 'scheduler/student_dashboard.html', context)
 
 
@@ -274,7 +343,41 @@ def export_timetable_csv(request):
 
     return response
 
+@login_required
+def my_reservations(request):
+    """Teacher views their own reservation history (read-only)"""
+    my_reqs = ReservationRequest.objects.filter(teacher=request.user).order_by('-id')
+    return render(request, 'scheduler/my_reservations.html', {'my_reqs': my_reqs})
+
 #for the logout
 def custom_logout(request):
     logout(request)
     return redirect('login')
+
+
+
+def find_free_rooms(request):
+    results = None
+    if request.method == 'POST':
+        form = RoomSearchForm(request.POST)
+        if form.is_valid():
+            day = form.cleaned_data['day']
+            start = form.cleaned_data['start_hour']
+            end = form.cleaned_data['end_hour']
+            
+            # 1. Get all rooms
+            all_rooms = Room.objects.all()
+            
+            # 2. Get occupied room IDs
+            occupied_ids = ScheduledSession.objects.filter(
+                day=day,
+                start_hour__lt=end,
+                end_hour__gt=start
+            ).values_list('room_id', flat=True)
+            
+            # 3. Filter
+            results = all_rooms.exclude(id__in=occupied_ids)
+    else:
+        form = RoomSearchForm()
+    
+    return render(request, 'scheduler/find_room.html', {'form': form, 'rooms': results})

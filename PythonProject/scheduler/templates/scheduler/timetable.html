@@ -29,9 +29,8 @@
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
-            // IMPORTANT: Since our test data is hardcoded to Feb 2024 in views.py,
-            // we force the calendar to open on that date so you can see the events!
-            initialDate: '2024-02-05', 
+           
+            initialDate: '{{ start_date }}', 
             
             slotMinTime: '08:00:00', // School starts at 8 AM
             slotMaxTime: '19:00:00', // School ends at 7 PM

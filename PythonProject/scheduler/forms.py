@@ -65,3 +65,9 @@ class TeacherForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+    
+
+class RoomSearchForm(forms.Form):
+    day = forms.ChoiceField(choices=[('Monday', 'Monday'), ('Tuesday', 'Tuesday'), ...]) # Add all days
+    start_hour = forms.IntegerField(min_value=8, max_value=18)
+    end_hour = forms.IntegerField(min_value=9, max_value=19)

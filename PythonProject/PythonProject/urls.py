@@ -21,9 +21,9 @@ from scheduler import views
 
 
 urlpatterns = [
-    # 1. Admin & Dashboard (The Home Page)
+    # 1. Admin & Dashboards (The Home Page)
     path('admin/', admin.site.urls),
-    path('', views.admin_dashboard, name='dashboard'),
+    path('', views.dashboard_router, name='dashboard'),
     path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
     path('dashboard/teacher/', views.teacher_dashboard, name='teacher_dashboard'),
     path('dashboard/student/', views.student_dashboard, name='student_dashboard'),
@@ -44,6 +44,7 @@ urlpatterns = [
     # --- mohammmed's additions 
     path('reservation/new/', views.make_reservation, name='make_reservation'),
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
+    path('reservations/mine/', views.my_reservations, name='my_reservations'),
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
     path('generate_timetable/', views.generate_timetable, name='generate_timetable'),
     #---Adjii's additions for generate schedule--

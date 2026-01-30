@@ -48,6 +48,17 @@ class ReservationRequest(models.Model):
     end_hour = models.IntegerField()
     reason = models.TextField(blank=True, help_text="Motif de la réservation (ex: Rattrapage)")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True) 
 
     def __str__(self):
         return f"Demande de {self.teacher.username} - {self.status}"
+    
+# added for teacher unavailability : mohammed 30/01    
+class TeacherUnavailability(models.Model):
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE)
+    day = models.CharField(max_length=20)
+    start_hour = models.IntegerField()
+    end_hour = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.teacher.username} busy on {self.day} {self.start_hour}h-{self.end_hour}h"

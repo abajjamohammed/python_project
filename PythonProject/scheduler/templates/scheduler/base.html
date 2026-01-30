@@ -193,13 +193,22 @@
     <!-- 1. LEFT SIDEBAR -->
     <aside class="sidebar">
         <!-- Brand -->
-        <a href="#" class="sidebar-brand">
+              <a href="#" class="sidebar-brand">
             <div class="brand-icon">
                 <i class="fas fa-graduation-cap"></i>
             </div>
             <div>
                 <div class="brand-text">ALPHAGO</div>
-                <div class="brand-sub">Admin Console</div>
+                <!-- MAKE THIS DYNAMIC -->
+                <div class="brand-sub">
+                    {% if request.user.role == 'A' %}
+                        Admin Console
+                    {% elif request.user.role == 'T' %}
+                        Teacher Portal
+                    {% else %}
+                        Student Portal
+                    {% endif %}
+                </div>
             </div>
         </a>
 
@@ -249,16 +258,35 @@
             {% endif %}
 
             <!-- TEACHER MENU -->
-            {% if request.user.role == 'Tr' %}
-                <div class="nav-header">Faculty Tools</div>
-                <a href="{% url 'teacher_dashboard' %}" class="nav-link">
-                    <span class="material-symbols-outlined">event_note</span>
+            {% if request.user.role == 'T' %}
+                <div class="nav-header">MAIN MENU</div>
+
+                <a href="{% url 'timetable' %}" class="nav-link {% if 'timetable' in request.path %}active{% endif %}">
+                    <span class="material-symbols-outlined">calendar_month</span>
                     My Schedule
                 </a>
-                <a href="{% url 'make_reservation' %}" class="nav-link">
+            
+               <a href="{% url 'make_reservation' %}" class="nav-link {% if 'reservation/new' in request.path %}active{% endif %}">
                     <span class="material-symbols-outlined">add_circle</span>
-                    Book Room
+                    Request Room
                 </a>
+            
+                <a href="#" class="nav-link">
+                    <span class="material-symbols-outlined">meeting_room</span>
+                    Find Rooms
+                </a>
+            
+                <div class="nav-header">My Requests</div>
+
+             <a href="{% url 'my_reservations' %}" class="nav-link {% if 'reservations/mine' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">pending_actions</span>
+                My Reservations
+                {% if pending_requests_count > 0 %}
+                <span class="badge bg-warning rounded-pill ms-2">{{ pending_requests_count }}</span>
+                {% endif %}
+            </a>
+            
+
             {% endif %}
 
             <!-- STUDENT MENU -->

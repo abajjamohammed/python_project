@@ -1,0 +1,48 @@
+{% extends 'scheduler/base.html' %} {% block content %}
+<style>
+    .live-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 5px solid #3b82f6; /* Blue stripe */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.uppercase {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.7rem;
+}
+</style>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h3 class="fw-bold">Welcome back, {{ user.username }}!</h3>
+            <p class="text-muted">Here is your schedule for today.</p>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="live-card">
+                <span class="text-primary fw-bold small uppercase">Next Class</span>
+                <h4 class="mt-2">{{ next_class.course.name|default:"No classes next" }}</h4>
+                <p class="text-muted mb-0"><i class="far fa-clock"></i> {{ next_class.start_hour }}:00</p>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="live-card" style="border-left-color: #10b981;">
+                <span class="text-success fw-bold small uppercase">Attendance</span>
+                <h4 class="mt-2">94%</h4>
+                <p class="text-muted mb-0">Well done!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mt-2">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold">My Weekly Schedule</h5>
+        </div>
+        <div class="card-body">
+            </div>
+    </div>
+</div>
+{% endblock %}

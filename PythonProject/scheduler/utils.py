@@ -1,5 +1,6 @@
 from .models import Room, Course, ScheduledSession, User, ReservationRequest
 from django.db.models import Q
+from .models import TeacherUnavailability
 #created by mohammed 05/01  this is the main algorithm for generating the timetable(the logic)
 class TimetableAlgorithm:
     def __init__(self):
@@ -33,6 +34,17 @@ class TimetableAlgorithm:
             # On vérifie si ce prof a déjà cours
             if conflicts.filter(course__teacher=teacher).exists():
                 return True # Le prof est occupé
+            
+               # Check declared unavailability
+            busy = TeacherUnavailability.objects.filter(
+                teacher=teacher,
+                day=day,
+                start_hour__lt=end,
+                end_hour__gt=start
+            ).exists()
+            if busy:
+                return True
+        
 
         if group:
             # On vérifie si ce groupe a déjà cours
