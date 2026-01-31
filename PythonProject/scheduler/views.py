@@ -9,14 +9,11 @@ from django.contrib.auth import logout
 from .utils import TimetableAlgorithm
 from django.http import HttpResponse
 import csv
-<<<<<<< Updated upstream
 from datetime import datetime
-=======
 from .forms import SessionForm
 from django.shortcuts import redirect
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import TeacherForm, TeacherEditForm # Import the new form
->>>>>>> Stashed changes
 
 
 
@@ -90,11 +87,11 @@ def student_timetable(request):
     context = {
         'sessions': sessions,
         'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        'hours': [8, 10, 14],
+        'hours': [9,10,11,12,13,14,15,16],
         'next_class': next_class,
         'student_group': request.user.student_group,
         'time_slots': [
-            {'label': '(8, 10):00', 'start': 8},
+            {'label': '(9, 10):00', 'start': 9},
             {'label': '(10, 12):00', 'start': 10},
             {'label': '(14, 16):00', 'start': 14},
         ]
@@ -318,7 +315,6 @@ def teacher_dashboard(request):
         'hours': [(8, 10), (10, 12), (14, 16), (16, 18)]
     }
     return render(request, 'scheduler/teacher_dashboard.html', context)
-    return render(request, 'scheduler/teacher_dashboard.html', context)
 
 #Added by Adjii:
 def student_dashboard(request):
@@ -331,7 +327,7 @@ def student_dashboard(request):
         'next_class': sessions.first(),
         'student_group': request.user.student_group,
         'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        'hours': [8, 9, 10, 11, 12, 14, 15, 16], # These must be integers to match session.start_hour
+        'hours': [9, 10, 11, 12,13, 14, 15, 16,17,18], # These must be integers to match session.start_hour
     }
     return render(request, 'scheduler/student_dashboard.html', context)
 
@@ -412,7 +408,7 @@ def find_free_rooms(request):
         form = RoomSearchForm()
     
     return render(request, 'scheduler/find_room.html', {'form': form, 'rooms': results})
-def student_timetable_view(request):
+"""def student_timetable_view(request):
     # 1. Define the specific time slots from your image
     # We use integer hours to match your database (approximate mapping)
     time_slots = [
@@ -452,7 +448,17 @@ def student_timetable_view(request):
     return render(request, 'scheduler/student_timetable.html', {
         'time_slots': time_slots,
         'schedule_grid': schedule_grid
-    })
+    })""" ##Possibly delete 
+def student_classes(request):
+    # Fetch all courses assigned to this student's group
+    courses = Course.objects.filter(group_name=request.user.student_group)
+    
+    context = {
+        'courses': courses,
+        'student_group': request.user.student_group,
+    }
+    return render(request, 'scheduler/student_classes.html', context)
+
 def add_session(request):
     # Everything below must be INDENTED (Tabbed in)
     if request.method == 'POST':

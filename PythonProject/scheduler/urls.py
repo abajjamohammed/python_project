@@ -10,6 +10,7 @@ urlpatterns = [
 
     # Student Route
     path('class-timetable/', views.student_timetable, name='student_timetable'),
+    path('my-classes/', views.student_classes, name='student_classes'),
 
     # This connects the 'Generate' button on the dashboard to the view
     path('generate/', views.generate_timetable, name='generate'),

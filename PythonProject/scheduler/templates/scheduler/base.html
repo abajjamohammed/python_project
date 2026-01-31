@@ -292,9 +292,13 @@
             <!-- STUDENT MENU -->
             {% if request.user.role == 'S' %}
                 <div class="nav-header">Student Area</div>
-                <a href="{% url 'student_dashboard' %}" class="nav-link">
+                <a href="{% url 'student_classes' %}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
                     My Classes
+                </a>
+                <br>
+                    <a href="{% url 'student_timetable' %}" class="nav-link ">
+                     <i class="fas fa-calendar-alt me-2"></i> My Time-Table
                 </a>
             {% endif %}
 
@@ -314,14 +318,15 @@
         <!-- Top White Navbar -->
         <nav class="top-navbar">
             <div class="page-title">
-                {% if user.role == 'A' %}
-                    System Overview
+                {% block dynamic_title %}
+                    {% if user.role == 'A' %}
+                        System Overview
                     {% elif user.role == 'T' %}
-                    Teacher Portal
+                        Teacher Portal
                     {% elif user.role == 'S' %}
-                    Student Dashboard
-
-                {% endif %}
+                        Student Dashboard
+                    {% endif %}
+                {% endblock dynamic_title %}
             </div>
 
             <div class="d-flex align-items-center gap-4">

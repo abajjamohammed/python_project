@@ -1,59 +1,43 @@
 {% extends 'scheduler/base.html' %}
-
+{% block dynamic_title %}Time-Table{% endblock dynamic_title %}
 {% block content %}
-<div class="container-fluid">
-    
-    <!-- Header Section -->
+<div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="mb-0 text-uppercase fw-bold">Emploi du Temps - Semestre 6</h4>
-            <p class="text-muted">Filière : Analytique des Données</p>
-        </div>
-        <div>
-            <!-- Print Button -->
-            <button onclick="window.print()" class="btn btn-outline-dark">
-                <i class="fas fa-print"></i> Imprimer
-            </button>
-            <a href="{% url 'timetable' %}" class="btn btn-primary">
-                <i class="fas fa-edit"></i> Edit Mode
-            </a>
-        </div>
+        <h2 class="fw-bold">Time-Table</h2>
+        <button onclick="window.print();" class="btn btn-outline-dark shadow-sm px-4 no-print">
+            <i class="fas fa-print me-2"></i> Imprimer (PDF)
+        </button>
     </div>
 
-    <!-- The Schedule Table -->
-    <div class="card shadow-sm">
+    <div class="card border-0 shadow-sm" style="border-radius: 12px;">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-bordered text-center mb-0 schedule-table">
-                    <!-- Blue Header Row (Time Slots) -->
-                    <thead>
+                <table class="table table-bordered mb-0 text-center align-middle">
+                    <thead class="bg-light">
                         <tr>
-                            <th class="day-header">JOURS / HEURES</th>
-                            {% for slot in time_slots %}
-                                <th class="time-header">{{ slot.label }}</th>
+                            <th class="py-3 text-muted small fw-bold" style="width: 100px;">TIME</th>
+                            {% for day in days %}
+                            <th class="py-3 text-dark fw-bold">{{ day|upper }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
-                    
-                    <!-- Table Body (Days and Classes) -->
                     <tbody>
-                        {% for row in schedule_grid %}
+                        {% for hour in hours %}
                         <tr>
-                            <!-- Day Name Column (Lundi, Mardi...) -->
-                            <td class="day-cell">{{ row.day_name }}</td>
-                            
-                            <!-- Class Slots -->
-                            {% for session in row.slots %}
-                                {% if session %}
-                                    <td class="class-cell">
-                                        <div class="course-code fw-bold">{{ session.course.name }}</div>
-                                        <div class="room-name text-muted">{{ session.room.name }}</div>
-                                        <div class="prof-name small text-primary">{{ session.course.teacher.username }}</div>
-                                    </td>
-                                {% else %}
-                                    <!-- Empty Cell -->
-                                    <td class="empty-cell"></td>
-                                {% endif %}
+                            <td class="fw-bold text-muted py-4">{{ hour }}:00</td>
+                            {% for day in days %}
+                            <td class="p-2" style="height: 120px; min-width: 160px; background-color: #fcfcfc;">
+                                {% for session in sessions %}
+                                    {% if session.day == day and session.start_hour == hour %}
+                                    <div class="p-3 shadow-sm text-start" 
+                                         style="background-color: #eef4ff; border-left: 4px solid #0d6efd; border-radius: 8px;">
+                                        <div class="text-primary fw-bold small">{{ session.course.name|upper }}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">Room {{ session.room.name }}</div>
+                                        <div class="mt-2 fw-bold" style="font-size: 0.65rem; color: #6c757d;">GROUP: {{ student_group }}</div>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
                             {% endfor %}
                         </tr>
                         {% endfor %}
@@ -62,61 +46,58 @@
             </div>
         </div>
     </div>
-    
-    <!-- Footer Note -->
-    <div class="mt-3 text-muted small">
-        <strong>N.B. :</strong> Les plannings de Travaux Pratiques seront affichés dans les départements concernés.
-    </div>
-
 </div>
-
 <style>
-    /* Mimic the School Style */
-    .schedule-table {
-        border: 2px solid #444;
+@media print {
+    /* 1. Hide UI elements */
+    .sidebar-wrapper, .top-navbar, .no-print, .btn, .logout-button, aside, nav, .vr {
+        display: none !important;
+    }
+    
+    /* 2. Reset layout */
+    .main-wrapper, main, .content-area, .container, .container-fluid {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        display: block !important;
     }
 
-    /* The Header Row (Blue) */
-    .time-header {
-        background-color: #dbeaff !important; /* Light Blue */
-        vertical-align: middle;
-        font-weight: bold;
-        border: 1px solid #999;
-        width: 18%; /* Distribute width evenly */
+    /* 3. Force One-Page Vertical Fit */
+    table {
+        font-size: 8.5pt !important; /* Slightly smaller font */
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important; /* Forces equal column widths */
     }
 
-    .day-header {
-        background-color: #b3d7ff !important; /* Slightly darker blue */
-        width: 10%;
-        vertical-align: middle;
+    /* This is the secret: shrink the row height */
+    th {
+        padding: 6px !important;
+        background-color: #f8f9fa !important;
+        -webkit-print-color-adjust: exact;
     }
 
-    /* The Day Column (Lundi, Mardi...) */
-    .day-cell {
-        background-color: #dbeaff !important;
-        font-weight: bold;
-        text-transform: uppercase;
-        vertical-align: middle;
-        border: 1px solid #999;
+    td {
+        height: 60px !important; /* Fixed height to force it to fit on one page */
+        padding: 2px !important; 
+        border: 1px solid #dee2e6 !important;
     }
 
-    /* The Class Cells */
-    .class-cell {
-        vertical-align: middle;
-        height: 100px; /* Force minimum height like the image */
-        background-color: #fff;
-        border: 1px solid #999;
+    /* Shrink the session boxes so they don't stretch the cells */
+    .p-3 {
+        padding: 5px !important;
+        margin: 0 !important;
     }
 
-    .empty-cell {
-        background-color: #fff;
+    .card-body {
+        padding: 0 !important;
     }
 
-    /* Print Styles (Hides Sidebar when printing) */
-    @media print {
-        .sidebar, .btn, .d-flex.justify-content-end { display: none !important; }
-        .col-md-10 { width: 100% !important; flex: 0 0 100%; max-width: 100%; }
-        .card { border: none; shadow: none; }
+    /* 4. Auto-Landscape and tight margins */
+    @page {
+        size: landscape;
+        margin: 0.5cm; /* Smaller margin gives more room for the table */
     }
+}
 </style>
 {% endblock %}

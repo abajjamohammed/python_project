@@ -25,6 +25,8 @@ class Course(models.Model):
     group_name = models.CharField(max_length=50)
     student_count = models.IntegerField()
     equipment_needed = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True, help_text="What is this course about?")
+    credits = models.IntegerField(default=3)
     def __str__(self):
         return self.name
 

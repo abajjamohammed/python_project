@@ -14,7 +14,7 @@ class ReservationForm(forms.ModelForm):
         ('Saturday','Saturday')
     ]
     
-    HOUR_CHOICES = [(i, f"{i}h") for i in range(8, 20)]
+    HOUR_CHOICES = [(i, f"{i}h") for i in range(9, 20)]
 
     day = forms.ChoiceField(choices=DAY_CHOICES, widget=forms.Select(attrs={'class': 'form-select'}))
     start_hour = forms.ChoiceField(choices=HOUR_CHOICES, widget=forms.Select(attrs={'class': 'form-select'}))
