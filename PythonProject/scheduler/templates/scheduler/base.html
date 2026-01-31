@@ -247,7 +247,7 @@
                 </a>
                 
                 <div class="nav-header">System</div>
-                <a href="#" class="nav-link">
+                <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
                     <span class="material-symbols-outlined">meeting_room</span>
                     Rooms
                 </a>
@@ -286,6 +286,10 @@
                 {% endif %}
             </a>
             
+            <a href="{% url 'manage_unavailability' %}" class="nav-link {% if 'unavailability' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">event_busy</span>
+                My Unavailability
+            </a>
 
             {% endif %}
 
@@ -297,8 +301,13 @@
                     My Classes
                 </a>
                 <br>
-                    <a href="{% url 'student_timetable' %}" class="nav-link ">
+                <a href="{% url 'student_timetable' %}" class="nav-link ">
                      <i class="fas fa-calendar-alt me-2"></i> My Time-Table
+                </a>
+
+                  <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
+                    <span class="material-symbols-outlined">meeting_room</span>
+                    Find Rooms
                 </a>
             {% endif %}
 

@@ -46,6 +46,9 @@ urlpatterns = [
     path('reservations/list/', views.approve_reservations, name='approve_reservations'),
     path('reservations/mine/', views.my_reservations, name='my_reservations'),
     path('rooms/find/', views.find_rooms, name='find_rooms'),
+    path('unavailability/', views.manage_unavailability, name='manage_unavailability'),
+    path('unavailability/delete/<int:unavail_id>/', views.delete_unavailability, name='delete_unavailability'),
+    
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
     path('generate_timetable/', views.generate_timetable, name='generate_timetable'),
     #---Adjii's additions for generate schedule--
