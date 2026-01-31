@@ -18,6 +18,10 @@ from django.contrib import admin
 from django.urls import include, path
 from django.contrib.auth import views as auth_views # Import Django Auth Views
 from scheduler import views
+# 1. Add these imports at the top
+from django.conf import settings
+from django.conf.urls.static import static
+
 
 
 urlpatterns = [
@@ -56,3 +60,9 @@ urlpatterns = [
     path('timetable/print/', views.student_timetable, name='student_timetable'),
      path('session/add/', views.add_session, name='add_session'),
 ]
+# ... your existing urlpatterns ...
+
+# 2. Add this block at the VERY END of the file
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

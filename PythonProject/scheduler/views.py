@@ -16,6 +16,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .forms import TeacherForm, TeacherEditForm # Import the new form
 from .models import TeacherUnavailability
 from .forms import TeacherUnavailabilityForm
+from .forms import ProfileForm
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+
 
 
 
@@ -611,3 +616,41 @@ def delete_unavailability(request, unavail_id):
         return redirect('manage_unavailability')
     
     return render(request, 'scheduler/confirm_delete_unavailability.html', {'unavailability': unavailability})
+def settings_view(request):
+    user = request.user
+
+    # 1. Initialize BOTH forms with default data first.
+    # This ensures variables always exist, preventing the UnboundLocalError.
+    profile_form = ProfileForm(instance=user)
+    password_form = PasswordChangeForm(user)
+
+    if request.method == 'POST':
+        # --- SCENARIO A: Updating Profile ---
+        if 'update_profile' in request.POST:
+            # Re-initialize profile_form with the submitted data
+            profile_form = ProfileForm(request.POST, request.FILES, instance=user)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, 'Your profile has been updated!')
+                return redirect('settings')
+
+        # --- SCENARIO B: Updating Password ---
+        elif 'change_password' in request.POST:
+            # Re-initialize password_form with the submitted data
+            password_form = PasswordChangeForm(user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                # Important: Keep the user logged in
+                update_session_auth_hash(request, user) 
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Please correct the error below.')
+
+    # 3. Render the template
+    # Since we defined both forms at the very top, this will never crash now!
+    context = {
+        'profile_form': profile_form,
+        'password_form': password_form
+    }
+    return render(request, 'scheduler/settings.html', context)

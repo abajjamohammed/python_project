@@ -251,10 +251,11 @@
                     <span class="material-symbols-outlined">meeting_room</span>
                     Rooms
                 </a>
-                <a href="#" class="nav-link">
-                    <span class="material-symbols-outlined">settings</span>
-                    Settings
-                </a>
+               <li class="nav-item mt-auto">
+    <a href="{% url 'settings' %}" class="nav-link">
+        <i class="fas fa-cog me-2"></i> Settings
+    </a>
+</li>
             {% endif %}
 
             <!-- TEACHER MENU -->
