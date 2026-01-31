@@ -198,7 +198,7 @@ def timetable_view(request):
     """
     sessions = ScheduledSession.objects.all()
     events = []
-    
+
     # 1. Calculate the Monday of the CURRENT week
     today = datetime.now().date()
     # weekday() returns 0 for Monday, 6 for Sunday. 
@@ -226,7 +226,7 @@ def timetable_view(request):
         "Jeudi":     monday_date + timedelta(days=3),
         "Vendredi":  monday_date + timedelta(days=4),
     }
-    
+
     for session in sessions:
         # Get the real date object for the session's day name
         session_date = day_mapping.get(session.day)
@@ -244,11 +244,11 @@ def timetable_view(request):
             'end': f"2024-02-{day_num}T{session.end_hour:02d}:00:00",
             # We don't set colors here anymore. CSS will handle the "Blue" look.
         })
-        
+
         if session_date:
             # Format date as string: "2026-01-26"
             date_str = session_date.strftime('%Y-%m-%d')
-            
+
             events.append({
                 'title': f"{session.course.name} ({session.room.name})",
                 # ISO Format: YYYY-MM-DDTHH:MM:SS
@@ -256,7 +256,7 @@ def timetable_view(request):
                 'end': f"{date_str}T{session.end_hour:02d}:00:00",
                 'color': '#3788d8' # Default Blue
             })
-            
+
     context = {
         'events_json': json.dumps(events),
         # Pass the calculated Monday date to the template
@@ -273,8 +273,48 @@ def add_teacher(request):
             return redirect('teacher_list') # Go back to the list
     else:
         form = TeacherForm()
-    
+
     return render(request, 'scheduler/add_teacher.html', {'form': form})
+
+
+
+
+@login_required
+def teacher_dashboard(request):
+    # Get teacher's sessions
+    sessions = ScheduledSession.objects.filter(course__teacher=request.user).select_related('course', 'room')
+
+    # Get today's sessions
+    today = datetime.now().strftime('%A')  # Gets day name like "Monday"
+    # Handle French day names if you're using them
+    day_mapping = {
+        'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi',
+        'Thursday': 'Jeudi', 'Friday': 'Vendredi'
+    }
+    today_french = day_mapping.get(today, today)
+
+    todays_sessions = sessions.filter(day=today_french)
+
+    # Get reservation requests
+    my_reqs = ReservationRequest.objects.filter(teacher=request.user).order_by('-id')
+
+    # Calculate stats
+    total_courses = sessions.values('course').distinct().count()
+    weekly_hours = sum([(s.end_hour - s.start_hour) for s in sessions])
+    pending_requests_count = my_reqs.filter(status='PENDING').count()
+
+    context = {
+        'sessions': sessions,
+        'todays_sessions': todays_sessions,
+        'todays_sessions_count': todays_sessions.count(),
+        'my_reqs': my_reqs,
+        'total_courses': total_courses,
+        'weekly_hours': weekly_hours,
+        'pending_requests_count': pending_requests_count,
+        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        'hours': [(8, 10), (10, 12), (14, 16), (16, 18)]
+    }
+    return render(request, 'scheduler/teacher_dashboard.html', context)
 
 
 
@@ -409,6 +449,7 @@ def find_free_rooms(request):
     
     return render(request, 'scheduler/find_room.html', {'form': form, 'rooms': results})
 """def student_timetable_view(request):
+def student_timetable_view(request):
     # 1. Define the specific time slots from your image
     # We use integer hours to match your database (approximate mapping)
     time_slots = [
@@ -497,3 +538,61 @@ def delete_teacher(request, teacher_id):
     
     # Show a confirmation page before deleting
     return render(request, 'scheduler/confirm_delete.html', {'teacher': teacher})
+
+
+
+@login_required
+def find_rooms(request):
+    """Search for available rooms based on criteria"""
+    available_rooms = []
+    search_performed = False
+    
+    if request.method == 'GET' and any(request.GET.values()):
+        search_performed = True
+        day = request.GET.get('day')
+        start_hour = request.GET.get('start_hour')
+        end_hour = request.GET.get('end_hour')
+        min_capacity = request.GET.get('min_capacity')
+        
+        # Start with all rooms
+        rooms = Room.objects.all()
+        
+        # Filter by capacity if specified
+        if min_capacity:
+            rooms = rooms.filter(capacity__gte=int(min_capacity))
+        
+        # Check availability for each room
+        for room in rooms:
+            is_available = True
+            
+            if day and start_hour and end_hour:
+                # Check if room is occupied during the requested time
+                conflicts = ScheduledSession.objects.filter(
+                    room=room,
+                    day=day,
+                    start_hour__lt=int(end_hour),
+                    end_hour__gt=int(start_hour)
+                )
+                
+                # Also check reservation requests
+                reservation_conflicts = ReservationRequest.objects.filter(
+                    room=room,
+                    day=day,
+                    status='APPROVED',
+                    start_hour__lt=int(end_hour),
+                    end_hour__gt=int(start_hour)
+                )
+                
+                if conflicts.exists() or reservation_conflicts.exists():
+                    is_available = False
+            
+            if is_available:
+                available_rooms.append(room)
+    
+    context = {
+        'available_rooms': available_rooms,
+        'search_performed': search_performed,
+        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        'hours': range(8, 19),  # 8h to 18h
+    }
+    return render(request, 'scheduler/find_rooms.html', context)

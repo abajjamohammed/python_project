@@ -191,7 +191,6 @@
         <div class="col-lg-8">
             <div class="dashboard-card p-4">
                 <h5 class="fw-bold mb-4">This Week's Schedule</h5>
-                
                 <div class="table-responsive">
                     <table class="schedule-table">
                         <thead>
@@ -259,7 +258,7 @@
                     <span class="material-symbols-outlined text-muted">chevron_right</span>
                 </a>
 
-                <a href="#" class="action-item">
+                <a href="{% url 'find_rooms' %}" class="action-item">
                     <div class="action-icon text-teal-600" style="color: #0d9488;">
                         <span class="material-symbols-outlined">search</span>
                     </div>
@@ -304,9 +303,8 @@
     <div class="row g-4">
         <div class="col-12">
             <div class="dashboard-card p-4">
-                <a href="{% url 'my_reservations' %}" class="btn btn-sm btn-outline-primary">View All</a>
-                <h5 class="fw-bold mb-4">My Reservation Requests</h5>
-                
+                <h5 class="fw-bold mb-4">My Reservation Requests  
+                    <a href="{% url 'my_reservations' %}" class="btn btn-sm btn-outline-primary">View All</a></h5>
                 {% if my_reqs %}
                 <div class="table-responsive">
                     <table class="table">

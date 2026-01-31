@@ -53,48 +53,48 @@ class TimetableAlgorithm:
 
         return False
 
-    def find_best_room(self, course, day, start, end):
-        """
-        Trouve la meilleure salle libre (Capacité et Équipements)
-        """
-        # 1. On prend toutes les salles
-        all_rooms = Room.objects.all()
-        suitable_rooms = []
+def find_best_room(self, course, day, start, end):
+    """
+    Trouve la meilleure salle libre (Capacité et Équipements)
+    """
+    all_rooms = Room.objects.all()
+    suitable_rooms = []
 
-        for room in all_rooms:
-            # Vérification Capacité
-            if room.capacity < course.student_count:
-                continue
-            
-            # Vérification Équipement (Simplifiée : on vérifie si le string est dedans)
-            # Ex: si cours veut "Projector", on regarde si "Projector" est dans "PC, Projector"
-            if course.equipment_needed and course.equipment_needed not in room.equipment:
-                continue
+    for room in all_rooms:
+        # 1. Check Capacity
+        if room.capacity < course.student_count:
+            continue
+        
+        # 2. Check Equipment
+        if course.equipment_needed and course.equipment_needed not in room.equipment:
+            continue
 
-            # Adjii's edits 
-            # Vérification Disponibilité (Appel à la base de données)
-            if not self.check_conflict(day, start, end, room=room):
-                suitable_rooms.append(room)
-            # 3. NEW: Check for Approved Teacher Reservations
-            reservation_exists = ReservationRequest.objects.filter(
-                room=room,
-                day=day,
-                start_hour__lt=end,
-                end_hour__gt=start,
-                status='APPROVED' # Only blocked if the Admin approved it
-            ).exists()
+        # 3. Check if room is free (no scheduled sessions)
+        if self.check_conflict(day, start, end, room=room):
+            continue  # Room is occupied by a scheduled session
+        
+        # 4. Check for approved teacher reservations
+        reservation_exists = ReservationRequest.objects.filter(
+            room=room,
+            day=day,
+            start_hour__lt=end,
+            end_hour__gt=start,
+            status='APPROVED'
+        ).exists()
 
-            if reservation_exists:
-                continue
+        if reservation_exists:
+            continue  # Room is reserved by a teacher
+        
+        # 5. If we reach here, room is suitable!
+        suitable_rooms.append(room)
 
-            suitable_rooms.append(room)
-        # Si aucune salle n'est trouvée
-        if not suitable_rooms:
-            return None
+    # No rooms found
+    if not suitable_rooms:
+        return None
 
-        # INTELLIGENCE : On trie pour prendre la plus petite salle suffisante (pour ne pas gâcher un grand amphi)
-        suitable_rooms.sort(key=lambda r: r.capacity)
-        return suitable_rooms[0]
+    # Return the smallest suitable room (optimization)
+    suitable_rooms.sort(key=lambda r: r.capacity)
+    return suitable_rooms[0]
     
 
     def generate_timetable(self):

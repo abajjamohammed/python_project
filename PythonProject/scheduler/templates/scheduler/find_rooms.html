@@ -1,0 +1,246 @@
+{% extends 'scheduler/base.html' %}
+
+{% block content %}
+<style>
+    .search-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        padding: 2rem;
+    }
+
+    .room-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .room-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(102, 126, 234, 0.3);
+    }
+
+    .room-card-alt {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .room-card-alt2 {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .room-info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .reserve-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid white;
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .reserve-btn:hover {
+        background: white;
+        color: #667eea;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .search-btn {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .search-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .filter-section {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+</style>
+
+<div class="container-fluid px-4 py-4">
+    
+    <!-- Header -->
+    <div class="mb-5">
+        <h3 class="fw-bold text-dark mb-1">Find Available Rooms</h3>
+        <p class="text-muted mb-0">Search for rooms based on your requirements</p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="search-card mb-4">
+        <form method="get" action="{% url 'find_rooms' %}">
+            <div class="filter-section">
+                <h5 class="fw-bold mb-3">
+                    <span class="material-symbols-outlined" style="vertical-align: middle;">filter_alt</span>
+                    Search Criteria
+                </h5>
+                
+                <div class="row g-3">
+                    <!-- Day -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                            Day
+                        </label>
+                        <select name="day" class="form-select">
+                            <option value="">Any day</option>
+                            {% for day in days %}
+                                <option value="{{ day }}" {% if request.GET.day == day %}selected{% endif %}>{{ day }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Start Hour -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                            Start Time
+                        </label>
+                        <select name="start_hour" class="form-select">
+                            <option value="">Select time</option>
+                            {% for hour in hours %}
+                                <option value="{{ hour }}" {% if request.GET.start_hour == hour|stringformat:"s" %}selected{% endif %}>{{ hour }}:00</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- End Hour -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                            End Time
+                        </label>
+                        <select name="end_hour" class="form-select">
+                            <option value="">Select time</option>
+                            {% for hour in hours %}
+                                <option value="{{ hour }}" {% if request.GET.end_hour == hour|stringformat:"s" %}selected{% endif %}>{{ hour }}:00</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Min Capacity -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">groups</span>
+                            Min. Capacity
+                        </label>
+                        <input type="number" name="min_capacity" class="form-control" 
+                               placeholder="e.g., 30" min="1" value="{{ request.GET.min_capacity }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Button -->
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary search-btn">
+                    <span class="material-symbols-outlined me-2" style="vertical-align: middle; font-size: 20px;">search</span>
+                    Search Available Rooms
+                </button>
+                {% if search_performed %}
+                    <a href="{% url 'find_rooms' %}" class="btn btn-outline-secondary ms-2" style="border-radius: 8px; padding: 0.75rem 2rem;">
+                        Clear Filters
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Results -->
+    {% if search_performed %}
+        {% if available_rooms %}
+            <div class="search-card">
+                <h5 class="fw-bold mb-4">
+                    <span class="material-symbols-outlined text-success" style="vertical-align: middle;">check_circle</span>
+                    Found {{ available_rooms|length }} Available Room{{ available_rooms|length|pluralize }}
+                </h5>
+                
+                <div class="row">
+                    {% for room in available_rooms %}
+                    <div class="col-lg-4 col-md-6">
+                        <div class="room-card {% cycle '' 'room-card-alt' 'room-card-alt2' %}">
+                            <h4 class="fw-bold mb-3">{{ room.name }}</h4>
+                            
+                            <div class="room-info-item">
+                                <span class="material-symbols-outlined">groups</span>
+                                <span>Capacity: {{ room.capacity }} people</span>
+                            </div>
+                            
+                            <div class="room-info-item">
+                                <span class="material-symbols-outlined">location_on</span>
+                                <span>{{ room.building|default:"Main Building" }}</span>
+                            </div>
+                            
+                            {% if room.has_projector %}
+                            <div class="room-info-item">
+                                <span class="material-symbols-outlined">videocam</span>
+                                <span>Projector available</span>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.3);">
+                                <a href="{% url 'make_reservation' %}?room={{ room.id }}&day={{ request.GET.day }}&start={{ request.GET.start_hour }}&end={{ request.GET.end_hour }}" 
+                                   class="btn reserve-btn w-100">
+                                    <span class="material-symbols-outlined me-2" style="vertical-align: middle; font-size: 18px;">add_circle</span>
+                                    Reserve This Room
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="search-card">
+                <div class="empty-state">
+                    <span class="material-symbols-outlined text-muted" style="font-size: 64px;">search_off</span>
+                    <h4 class="mt-3 fw-bold">No Available Rooms Found</h4>
+                    <p class="text-muted">Try adjusting your search criteria or selecting a different time slot.</p>
+                </div>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="search-card">
+            <div class="empty-state">
+                <span class="material-symbols-outlined text-primary" style="font-size: 64px;">search</span>
+                <h4 class="mt-3 fw-bold">Ready to Search</h4>
+                <p class="text-muted">Select your criteria above and click "Search" to find available rooms.</p>
+            </div>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
