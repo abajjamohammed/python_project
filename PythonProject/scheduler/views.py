@@ -384,7 +384,6 @@ def my_reservations(request):
 def custom_logout(request):
     logout(request)
     return redirect('login')
-<<<<<<< Updated upstream
 
 
 
@@ -413,7 +412,6 @@ def find_free_rooms(request):
         form = RoomSearchForm()
     
     return render(request, 'scheduler/find_room.html', {'form': form, 'rooms': results})
-=======
 def student_timetable_view(request):
     # 1. Define the specific time slots from your image
     # We use integer hours to match your database (approximate mapping)
@@ -493,4 +491,3 @@ def delete_teacher(request, teacher_id):
     
     # Show a confirmation page before deleting
     return render(request, 'scheduler/confirm_delete.html', {'teacher': teacher})
->>>>>>> Stashed changes
