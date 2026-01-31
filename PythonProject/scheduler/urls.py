@@ -13,4 +13,7 @@ urlpatterns = [
 
     # This connects the 'Generate' button on the dashboard to the view
     path('generate/', views.generate_timetable, name='generate'),
+    path('teachers/edit/<int:teacher_id>/', views.edit_teacher, name='edit_teacher'),
+    path('teachers/delete/<int:teacher_id>/', views.delete_teacher, name='delete_teacher'),
+   
 ]

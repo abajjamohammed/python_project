@@ -1,0 +1,51 @@
+{% extends 'scheduler/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Session</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Course</label>
+                            {{ form.course }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Room</label>
+                            {{ form.room }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Day of Week</label>
+                            {{ form.day }}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label fw-bold">Start Hour (0-24)</label>
+                                {{ form.start_hour }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold">End Hour (0-24)</label>
+                                {{ form.end_hour }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">Save Session</button>
+                            <a href="{% url 'timetable' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

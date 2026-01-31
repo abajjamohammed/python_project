@@ -9,7 +9,14 @@ from django.contrib.auth import logout
 from .utils import TimetableAlgorithm
 from django.http import HttpResponse
 import csv
+<<<<<<< Updated upstream
 from datetime import datetime
+=======
+from .forms import SessionForm
+from django.shortcuts import redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import TeacherForm, TeacherEditForm # Import the new form
+>>>>>>> Stashed changes
 
 
 
@@ -203,6 +210,10 @@ def timetable_view(request):
 
     # 2. Dynamic Mapping: Map string days to Real Dates for this week
     # If Monday is Jan 26th, Tuesday will be Jan 27th, etc.
+    sessions = ScheduledSession.objects.all()
+    events = []
+    
+    # Date mapping logic... (Keep your existing date mapping here)
     day_mapping = {
         "Monday":    monday_date,
         "Tuesday":   monday_date + timedelta(days=1),
@@ -222,6 +233,20 @@ def timetable_view(request):
     for session in sessions:
         # Get the real date object for the session's day name
         session_date = day_mapping.get(session.day)
+        day_num = day_mapping.get(session.day, "05")
+        
+        events.append({
+            'title': session.course.name,
+            # We send extra data to display inside the card
+            'extendedProps': {
+                'room': session.room.name,
+                'group': session.course.group_name, # <--- Added Group Name
+                'teacher': session.course.teacher.username
+            },
+            'start': f"2024-02-{day_num}T{session.start_hour:02d}:00:00",
+            'end': f"2024-02-{day_num}T{session.end_hour:02d}:00:00",
+            # We don't set colors here anymore. CSS will handle the "Blue" look.
+        })
         
         if session_date:
             # Format date as string: "2026-01-26"
@@ -359,6 +384,7 @@ def my_reservations(request):
 def custom_logout(request):
     logout(request)
     return redirect('login')
+<<<<<<< Updated upstream
 
 
 
@@ -387,3 +413,84 @@ def find_free_rooms(request):
         form = RoomSearchForm()
     
     return render(request, 'scheduler/find_room.html', {'form': form, 'rooms': results})
+=======
+def student_timetable_view(request):
+    # 1. Define the specific time slots from your image
+    # We use integer hours to match your database (approximate mapping)
+    time_slots = [
+        {'label': '09h00 - 10h30', 'start': 9, 'end': 10},
+        {'label': '10h45 - 12h15', 'start': 10, 'end': 12}, # Adjusted for logic
+        {'label': '12h30 - 14h00', 'start': 12, 'end': 14}, # Lunch
+        {'label': '14h15 - 15h45', 'start': 14, 'end': 15},
+        {'label': '16h00 - 17h30', 'start': 16, 'end': 17},
+    ]
+
+    days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+    
+    # 2. Get all sessions
+    all_sessions = ScheduledSession.objects.all()
+
+    # 3. Create a Matrix (Grid) for the template
+    # Structure: schedule_grid = [ {'day': 'Lundi', 'slots': [session_or_None, session_or_None...]} ]
+    schedule_grid = []
+
+    for day in days:
+        day_row = {'day_name': day, 'slots': []}
+        
+        for slot in time_slots:
+            # Find a session that matches this Day AND this Start Hour
+            # Note: We filter by Day name (e.g., "Monday") and approximate start hour
+            # You might need to adjust 'Monday' vs 'Lundi' depending on what is saved in your DB
+            session = all_sessions.filter(
+                day__iexact=day,         # Case insensitive match
+                start_hour__gte=slot['start'], # Starts around this slot
+                start_hour__lt=slot['end']     # Starts before the next slot
+            ).first()
+            
+            day_row['slots'].append(session)
+        
+        schedule_grid.append(day_row)
+
+    return render(request, 'scheduler/student_timetable.html', {
+        'time_slots': time_slots,
+        'schedule_grid': schedule_grid
+    })
+def add_session(request):
+    # Everything below must be INDENTED (Tabbed in)
+    if request.method == 'POST':
+        form = SessionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('timetable') 
+    else:
+        form = SessionForm()
+    
+    return render(request, 'scheduler/add_session.html', {'form': form})
+# --- EDIT TEACHER ---
+def edit_teacher(request, teacher_id):
+    # Find the specific teacher by their ID
+    teacher = get_object_or_404(User, pk=teacher_id)
+    
+    if request.method == 'POST':
+        # "instance=teacher" tells Django: "Update THIS specific user"
+        form = TeacherEditForm(request.POST, instance=teacher)
+        if form.is_valid():
+            form.save()
+            return redirect('teacher_list')
+    else:
+        # Pre-fill the form with existing data
+        form = TeacherEditForm(instance=teacher)
+    
+    return render(request, 'scheduler/add_teacher.html', {'form': form, 'title': 'Edit Teacher'})
+
+# --- DELETE TEACHER ---
+def delete_teacher(request, teacher_id):
+    teacher = get_object_or_404(User, pk=teacher_id)
+    
+    if request.method == 'POST':
+        teacher.delete()
+        return redirect('teacher_list')
+    
+    # Show a confirmation page before deleting
+    return render(request, 'scheduler/confirm_delete.html', {'teacher': teacher})
+>>>>>>> Stashed changes
