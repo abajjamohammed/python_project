@@ -1,7 +1,7 @@
 from django import forms
 
 # ⚠️ UPDATE THIS LINE: Import both ReservationRequest AND Course
-from .models import ReservationRequest, Course, ScheduledSession, User
+from .models import ReservationRequest, Course, ScheduledSession,  User, Course, Room
 
 # --- Your Friend's Code (Leave this alone) ---
 class ReservationForm(forms.ModelForm):
@@ -71,3 +71,31 @@ class RoomSearchForm(forms.Form):
     day = forms.ChoiceField(choices=[('Monday', 'Monday'), ('Tuesday', 'Tuesday'), ...]) # Add all days
     start_hour = forms.IntegerField(min_value=8, max_value=18)
     end_hour = forms.IntegerField(min_value=9, max_value=19)
+    # Make sure ScheduledSession is imported at the top of the file!
+from .models import ScheduledSession 
+
+class SessionForm(forms.ModelForm):
+    class Meta:
+        model = ScheduledSession
+        fields = ['course', 'room', 'day', 'start_hour', 'end_hour']
+        widgets = {
+            'course': forms.Select(attrs={'class': 'form-select'}),
+            'room': forms.Select(attrs={'class': 'form-select'}),
+            'day': forms.Select(choices=[
+                ('Monday', 'Monday'), ('Tuesday', 'Tuesday'), 
+                ('Wednesday', 'Wednesday'), ('Thursday', 'Thursday'), 
+                ('Friday', 'Friday')
+            ], attrs={'class': 'form-select'}),
+            'start_hour': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '8'}),
+            'end_hour': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '10'}),
+        }
+class TeacherEditForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email'] # No password field here
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }

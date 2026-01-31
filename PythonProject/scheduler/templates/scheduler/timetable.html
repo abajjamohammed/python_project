@@ -1,21 +1,23 @@
 {% extends 'scheduler/base.html' %}
 
 {% block content %}
-<div class="card shadow">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h4 class="m-0 font-weight-bold text-primary"><i class="fas fa-calendar-alt"></i> University Schedule</h4>
+<div class="card shadow-none border-0 bg-transparent">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold text-dark">University Schedule</h4>
         <div>
-            <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-print"></i> Print</button>
-            <button class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Session</button>
+            <a href="#" class="btn btn-light border text-dark btn-sm"><i class="fas fa-print"></i> Print</a>
+            <a href="{% url 'add_session' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Session</a>
         </div>
     </div>
-    <div class="card-body p-0">
-        <!-- This div is where the Javascript builds the calendar -->
-        <div id='calendar' class="p-4"></div>
+
+    <!-- The Calendar -->
+    <div class="card-body p-0 bg-white rounded shadow-sm">
+        <div id='calendar'></div>
     </div>
 </div>
 
-<!-- FullCalendar JS Library -->
+<!-- FullCalendar JS -->
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
 <script>
@@ -23,25 +25,40 @@
         var calendarEl = document.getElementById('calendar');
         
         var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek', // Show the week view by default
+            initialView: 'timeGridWeek',
+            initialDate: '2024-02-05',
             headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                left: '', // Hide default navigation for a cleaner look
+                center: '',
+                right: '' 
             },
            
             initialDate: '{{ start_date }}', 
+            dayHeaderFormat: { weekday: 'long' }, // Show "MONDAY" instead of "Mon 2/5"
             
-            slotMinTime: '08:00:00', // School starts at 8 AM
-            slotMaxTime: '19:00:00', // School ends at 7 PM
-            hiddenDays: [0, 6],      // Hide Sunday (0) and Saturday (6)
-            allDaySlot: false,       // Hide the "All Day" row at the top
+            slotMinTime: '08:00:00',
+            slotMaxTime: '18:00:00',
+            allDaySlot: false,
+            hiddenDays: [0, 6], // Hide Sun/Sat
+            height: 'auto',
+            slotDuration: '01:00:00', // 1 hour slots like your image
+            expandRows: true, // Make rows fill the height
             
-            events: {{ events_json|safe }}, // Load data from Django
+            events: {{ events_json|safe }},
             
-            // Make it look nice
-            eventClick: function(info) {
-                alert('Course: ' + info.event.title);
+            // --- THIS CREATES THE CARD CONTENT ---
+            eventContent: function(arg) {
+                let title = arg.event.title;
+                let room = arg.event.extendedProps.room;
+                let group = arg.event.extendedProps.group;
+                
+                return { html: `
+                    <div class="custom-event-card">
+                        <div class="event-title">${title}</div>
+                        <div class="event-room">Room ${room}</div>
+                        <div class="event-group">GROUP: ${group}</div>
+                    </div>
+                `};
             }
         });
         
@@ -50,17 +67,73 @@
 </script>
 
 <style>
-    /* Make the calendar text look cleaner */
-    .fc-event {
-        cursor: pointer;
-        border: none;
+    /* --- 1. THE GRID STYLING --- */
+    
+    /* Remove borders to make it look clean */
+    .fc-theme-standard td, .fc-theme-standard th {
+        border: 1px solid #f0f0f0;
     }
-    .fc-timegrid-slot {
-        height: 3em !important; /* Make rows taller */
+    
+    /* Header (MONDAY, TUESDAY...) */
+    .fc-col-header-cell-cushion {
+        color: #000;
+        text-transform: uppercase;
+        font-weight: 800; /* Extra Bold */
+        font-size: 0.8rem;
+        padding: 15px 0;
+        text-decoration: none !important; 
     }
-    a {
-        text-decoration: none;
-        color: inherit;
+    
+    /* Time Labels (8:00, 9:00) */
+    .fc-timegrid-slot-label-cushion {
+        font-weight: 700;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    /* --- 2. THE CARD STYLING (The Blue Box) --- */
+    
+    /* Remove default FullCalendar styles */
+    .fc-v-event {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* The Content Box */
+    .custom-event-card {
+        background-color: #eff6ff; /* Light Blue Background */
+        border-left: 5px solid #2563eb; /* Thick Blue Left Border */
+        border-radius: 6px;
+        padding: 8px 12px;
+        height: 100%;
+        width: 100%;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    /* Typography inside the card */
+    .event-title {
+        color: #1e40af; /* Dark Blue Text */
+        font-weight: 700;
+        font-size: 0.9rem;
+        margin-bottom: 2px;
+    }
+
+    .event-room {
+        color: #64748b; /* Grey Text */
+        font-size: 0.8rem;
+    }
+
+    .event-group {
+        margin-top: 5px;
+        color: #000;
+        font-weight: 800;
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 </style>
 {% endblock %}

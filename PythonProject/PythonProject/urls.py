@@ -49,4 +49,6 @@ urlpatterns = [
     path('generate_timetable/', views.generate_timetable, name='generate_timetable'),
     #---Adjii's additions for generate schedule--
     path('export/csv/', views.export_timetable_csv, name='export_timetable_csv'),
+    path('timetable/print/', views.student_timetable_view, name='student_timetable'),
+     path('session/add/', views.add_session, name='add_session'),
 ]

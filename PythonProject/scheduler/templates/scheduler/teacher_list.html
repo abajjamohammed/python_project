@@ -33,8 +33,18 @@
                         <td>{{ teacher.email }}</td>
                         <td><span class="badge bg-success">Active</span></td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                           <td>
+    <!-- Edit Button (Blue) -->
+    <!-- We pass 'teacher.id' to the URL -->
+    <a href="{% url 'edit_teacher' teacher.id %}" class="btn btn-sm btn-outline-primary">
+        <i class="fas fa-edit"></i>
+    </a>
+
+    <!-- Delete Button (Red) -->
+    <a href="{% url 'delete_teacher' teacher.id %}" class="btn btn-sm btn-outline-danger">
+        <i class="fas fa-trash"></i>
+    </a>
+</td>
                         </td>
                     </tr>
                     {% empty %}
