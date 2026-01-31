@@ -271,7 +271,7 @@
                     Request Room
                 </a>
             
-                <a href="#" class="nav-link">
+               <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
                     <span class="material-symbols-outlined">meeting_room</span>
                     Find Rooms
                 </a>
