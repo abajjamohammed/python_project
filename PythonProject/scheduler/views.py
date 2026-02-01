@@ -621,6 +621,7 @@ def delete_unavailability(request, unavail_id):
         return redirect('manage_unavailability')
     
     return render(request, 'scheduler/confirm_delete_unavailability.html', {'unavailability': unavailability})
+
 def settings_view(request):
     user = request.user
 
