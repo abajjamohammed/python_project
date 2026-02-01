@@ -29,9 +29,8 @@
                             <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
-                          <ul class="dropdown-menu dropdown-menu-end shadow">
-    <!-- EDIT BUTTON -->
-    <li>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                               <li>
         <a class="dropdown-item" href="{% url 'edit_course' course.id %}">
             <i class="fas fa-edit me-2 text-primary"></i> Edit
         </a>
@@ -43,7 +42,7 @@
             <i class="fas fa-trash me-2"></i> Delete
         </a>
     </li>
-</ul>
+                            </ul>
                         </div>
                     </div>
 
@@ -97,3 +96,6 @@
     }
 </style>
 {% endblock %}
+
+
+

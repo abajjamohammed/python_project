@@ -12,7 +12,7 @@ import csv
 from datetime import datetime
 from .forms import SessionForm
 from django.shortcuts import redirect
-from django.shortcuts import render, redirect, get_object_or_404
+
 from .forms import TeacherForm, TeacherEditForm # Import the new form
 from .models import TeacherUnavailability
 from .forms import TeacherUnavailabilityForm
@@ -20,6 +20,11 @@ from .forms import ProfileForm
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
+# --- Make sure this import is at the very top of the file! ---
+from .models import Course  
+
+
+from .forms import CourseForm  # <--- Make sure this is here
 
 
 
@@ -187,7 +192,7 @@ def add_course(request):
         form = CourseForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('dashboard') # Go back to dashboard after saving
+            return redirect('course_list') # Go back to dashboard after saving
     else:
         form = CourseForm()
     
@@ -365,49 +370,19 @@ def teacher_dashboard(request):
 
 #Added by Adjii:
 def student_dashboard(request):
-    # 1. Get student info and basic counts
-    student_group = request.user.student_group
-    sessions = ScheduledSession.objects.filter(course__group_name=student_group)
-    course_count = Course.objects.filter(group_name=student_group).count()
+    # Filter for Mohammed's group
+    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
     
-    # 2. Time-Table display settings
-    day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-    
-    # 3. SMART "NEXT UP" LOGIC
-    now = datetime.now()
-    current_day = now.strftime("%A")
-    current_hour = now.hour
-    next_class = None
-
-    if sessions.exists():
-        # A. Look for classes left TODAY
-        today_remaining = sessions.filter(day=current_day, start_hour__gt=current_hour).order_by('start_hour')
-        
-        if today_remaining.exists():
-            next_class = today_remaining.first()
-        else:
-            # B. Look for classes later this week
-            current_day_index = day_order.index(current_day) if current_day in day_order else -1
-            later_this_week = sessions.exclude(day=current_day).filter(
-                day__in=day_order[current_day_index + 1:]
-            )
-            
-            if later_this_week.exists():
-                next_class = sorted(list(later_this_week), key=lambda x: (day_order.index(x.day), x.start_hour))[0]
-            else:
-                # C. LOOP BACK: Monday morning
-                next_class = sorted(list(sessions), key=lambda x: (day_order.index(x.day), x.start_hour))[0]
-
     # Context for the dashboard
     context = {
         'sessions': sessions,
-        'course_count': course_count, # Correctly displays 4 courses
-        'next_class': next_class,     # Looping spotlight
-        'student_group': student_group,
-        'days': day_order,
-        'hours': [9, 10, 11, 12, 13, 14, 15, 16], # Compacted to match reference
+        'next_class': sessions.first(),
+        'student_group': request.user.student_group,
+        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        'hours': [9, 10, 11, 12,13, 14, 15, 16,17,18], # These must be integers to match session.start_hour
     }
     return render(request, 'scheduler/student_dashboard.html', context)
+
 
 #Adjii added this for the generate schedule button
 @login_required
@@ -685,38 +660,38 @@ def settings_view(request):
     }
     return render(request, 'scheduler/settings.html', context)
 
-from datetime import datetime
 
-def get_next_spotlight_session(student_group):
-    # 1. Define day order to handle sorting
-    day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+# --- Paste this function at the bottom ---
+def course_list(request):
+    # Fetch all courses
+    courses = Course.objects.all()
+    return render(request, 'scheduler/course_list.html', {'courses': courses})
+# --- EDIT COURSE ---
+# --- EDIT COURSE ---
+# --- EDIT COURSE ---
+def edit_course(request, course_id):
+    # Find the course by ID
+    course = get_object_or_404(Course, id=course_id)
     
-    # 2. Get current time and day
-    now = datetime.now()
-    current_day = now.strftime("%A")
-    current_hour = now.hour
-
-    # 3. Get all sessions for this student
-    all_sessions = ScheduledSession.objects.filter(course__group_name=student_group)
+    if request.method == 'POST':
+        # Load the form with the existing course data (instance=course)
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            return redirect('course_list')
+    else:
+        # Pre-fill the form
+        form = CourseForm(instance=course)
     
-    if not all_sessions.exists():
-        return None
+    # Reuse the add_course template but with data filled in
+    return render(request, 'scheduler/add_course.html', {'form': form, 'is_edit': True})
 
-    # 4. Filter for sessions LATER today
-    today_remaining = all_sessions.filter(day=current_day, start_hour__gt=current_hour).order_by('start_hour')
+# --- DELETE COURSE ---
+def delete_course(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
     
-    if today_remaining.exists():
-        return today_remaining.first()
-
-    # 5. Filter for sessions LATER this week
-    current_day_index = day_order.index(current_day) if current_day in day_order else -1
-    later_this_week = all_sessions.exclude(day=current_day).filter(
-        day__in=day_order[current_day_index + 1:]
-    )
+    if request.method == 'POST':
+        course.delete()
+        return redirect('course_list')
     
-    # Sort these by day index then hour
-    if later_this_week.exists():
-        return sorted(list(later_this_week), key=lambda x: (day_order.index(x.day), x.start_hour))[0]
-
-    # 6. LOOP BACK: If nothing is left this week, get the very first session on Monday
-    return sorted(list(all_sessions), key=lambda x: (day_order.index(x.day), x.start_hour))[0]
+    return render(request, 'scheduler/confirm_delete_course.html', {'course': course})
