@@ -46,6 +46,15 @@
                         </div>
                     </div>
 
+                    <!-- COURSE DESCRIPTION (ADDED HERE) -->
+                    {% if course.description %}
+                    <div class="mb-3">
+                        <p class="text-muted small mb-0" style="font-size: 0.85rem; line-height: 1.4;">
+                            {{ course.description|truncatechars:120 }}
+                        </p>
+                    </div>
+                    {% endif %}
+
                     <div class="d-flex align-items-center mb-3">
                         <div class="avatar bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px; font-weight: bold;">
                             {{ course.teacher.username.0|upper }}
