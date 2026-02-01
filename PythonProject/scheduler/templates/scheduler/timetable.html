@@ -324,11 +324,6 @@ function exportTimetableAsImage() {
                             </a>
                         </li>
                         <li>
-                          <a class="dropdown-item" href="{% url 'export_pdf' %}{% if selected_filiere %}?filiere={{ selected_filiere.id }}{% endif %}">
-                                <i class="fas fa-file-pdf text-danger me-2"></i> PDF (.pdf)
-                            </a>
-                        </li>
-                        <li>
                             <a class="dropdown-item" href="#" onclick="exportTimetableAsImage()">
                                 <i class="fas fa-image text-info me-2"></i> Image (.png)
                             </a>
