@@ -33,15 +33,21 @@ class ReservationForm(forms.ModelForm):
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ['name', 'teacher', 'group_name', 'student_count', 'equipment_needed']
+        fields = ['name', 'code', 'teacher', 'filiere', 'group', 'session_type', 'equipment_needed', 'description', 'credits']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Course Name'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., INFO101'}),
             'teacher': forms.Select(attrs={'class': 'form-select'}),
-            'group_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'student_count': forms.NumberInput(attrs={'class': 'form-control'}),
-            'equipment_needed': forms.TextInput(attrs={'class': 'form-control'}),
+            'filiere': forms.Select(attrs={'class': 'form-select'}),
+            'group': forms.Select(attrs={'class': 'form-select'}),  # Can be empty for CM
+            'session_type': forms.Select(attrs={'class': 'form-select'}),
+            'equipment_needed': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Projector, Computers'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'credits': forms.NumberInput(attrs={'class': 'form-control'}),
         }
-        from .models import User # Make sure User is imported
+        help_texts = {
+            'group': 'Leave empty for CM (Cours Magistral for entire filière). Select a group for TD/TP.',
+        }
 
 class TeacherForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))

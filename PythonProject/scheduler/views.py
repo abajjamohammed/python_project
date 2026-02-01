@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required  
 from django.contrib import messages
 from .models import Room, Course, ReservationRequest, User, ScheduledSession
-from django.db.models import Count
+from django.db.models import Count,Q
 from .forms import ReservationForm, CourseForm, TeacherForm, RoomSearchForm
 from django.shortcuts import render, redirect, get_object_or_404 
 import json  
@@ -87,21 +87,29 @@ def teacher_timetable(request):
 
 @login_required
 def student_timetable(request):
-    """The dedicated full-page schedule for students"""
-    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
-    next_class = sessions.first()
-    
+    """The dedicated full-page schedule for students (Updated for New Models)"""
+    student_group = request.user.student_group
+
+    if not student_group:
+        return render(request, 'scheduler/student_timetable.html', {
+            'error': 'You are not assigned to any group.'
+        })
+
+    # Logic: Get sessions for the student's specific Group OR for the entire Filière (CM)
+    sessions = ScheduledSession.objects.filter(
+        Q(course__group=student_group) | 
+        Q(course__filiere=student_group.filiere, course__group__isnull=True)
+    ).select_related('course', 'room', 'course__teacher').order_by('day', 'start_hour')
+
+    next_class = sessions.filter(day="Monday").first() # Just a placeholder logic
+
     context = {
         'sessions': sessions,
-        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        'hours': [9,10,11,12,13,14,15,16],
+        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        # Hours as integers to match your DB (8, 9, 10...)
+        'hours': range(8, 19), 
         'next_class': next_class,
-        'student_group': request.user.student_group,
-        'time_slots': [
-            {'label': '(9, 10):00', 'start': 9},
-            {'label': '(10, 12):00', 'start': 10},
-            {'label': '(14, 16):00', 'start': 14},
-        ]
+        'student_group': student_group,
     }
     return render(request, 'scheduler/student_timetable.html', context)
 
@@ -364,17 +372,39 @@ def teacher_dashboard(request):
     return render(request, 'scheduler/teacher_dashboard.html', context)
 
 #Added by Adjii:
+@login_required
 def student_dashboard(request):
-    # Filter for Mohammed's group
-    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
+    # Get student's group
+    student_group = request.user.student_group
+    
+    if not student_group:
+        # Student has no group assigned
+        context = {
+            'sessions': [],
+            'next_class': None,
+            'student_group': None,
+            'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            'hours': [8,9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+            'error_message': 'You are not assigned to any group. Please contact administration.'
+        }
+        return render(request, 'scheduler/student_dashboard.html', context)
+    
+    # Filter sessions for this student's group
+    # Get both CM (for entire filière) and TD/TP (for specific group)
+    from django.db.models import Q
+    
+    sessions = ScheduledSession.objects.filter(
+        Q(course__filiere=student_group.filiere, course__group__isnull=True) |  # CM courses (entire filière)
+        Q(course__group=student_group)  # TD/TP courses (specific group)
+    ).select_related('course', 'room', 'course__teacher').order_by('day', 'start_hour')
     
     # Context for the dashboard
     context = {
         'sessions': sessions,
         'next_class': sessions.first(),
-        'student_group': request.user.student_group,
+        'student_group': student_group,
         'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        'hours': [9, 10, 11, 12,13, 14, 15, 16,17,18], # These must be integers to match session.start_hour
+        'hours': [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
     }
     return render(request, 'scheduler/student_dashboard.html', context)
 
@@ -472,15 +502,33 @@ def student_timetable_view(request):
         'time_slots': time_slots,
         'schedule_grid': schedule_grid
     })""" ##Possibly delete 
+
+# Make sure Q is imported at the top of the file!
+from django.db.models import Q 
+
+@login_required
 def student_classes(request):
-    # Fetch all courses assigned to this student's group
-    courses = Course.objects.filter(group_name=request.user.student_group)
+    """List of all courses for the student (CM + TD/TP)"""
+    student_group = request.user.student_group
+    
+    if not student_group:
+        return render(request, 'scheduler/student_classes.html', {
+            'courses': [],
+            'error': 'No group assigned.'
+        })
+
+    # Logic: Get courses for THIS Group (TD/TP) OR for the whole Filière (CM)
+    courses = Course.objects.filter(
+        Q(group=student_group) | 
+        Q(filiere=student_group.filiere, group__isnull=True)
+    ).select_related('teacher', 'filiere').order_by('name')
     
     context = {
         'courses': courses,
-        'student_group': request.user.student_group,
+        'student_group': student_group,
     }
     return render(request, 'scheduler/student_classes.html', context)
+
 
 def add_session(request):
     # Everything below must be INDENTED (Tabbed in)
