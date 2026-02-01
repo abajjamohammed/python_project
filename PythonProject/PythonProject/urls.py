@@ -23,7 +23,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 
-
 urlpatterns = [
     # 1. Admin & Dashboards (The Home Page)
     path('admin/', admin.site.urls),
@@ -52,6 +51,7 @@ urlpatterns = [
     path('rooms/find/', views.find_rooms, name='find_rooms'),
     path('unavailability/', views.manage_unavailability, name='manage_unavailability'),
     path('unavailability/delete/<int:unavail_id>/', views.delete_unavailability, name='delete_unavailability'),
+    path('timetable/teacher/', views.teacher_timetable, name='teacher_timetable'),
     
     path('reservations/process/<int:req_id>/<str:action>/', views.process_request, name='process_request'),
     path('generate_timetable/', views.generate_timetable, name='generate_timetable'),
@@ -65,6 +65,10 @@ urlpatterns = [
     # --- ADD THESE MISSING LINES ---
     path('courses/edit/<int:course_id>/', views.edit_course, name='edit_course'),
     path('courses/delete/<int:course_id>/', views.delete_course, name='delete_course'),
+    
+    # to import the timetables
+    path('export/excel/', views.export_excel, name='export_excel'),
+    path('export/pdf/', views.export_pdf, name='export_pdf'),
     
 
 ]

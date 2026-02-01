@@ -265,7 +265,7 @@
             {% if request.user.role == 'T' %}
                 <div class="nav-header">MAIN MENU</div>
 
-                <a href="{% url 'timetable' %}" class="nav-link {% if 'timetable' in request.path %}active{% endif %}">
+               <a href="{% url 'teacher_timetable' %}" class="nav-link {% if 'timetable' in request.path %}active{% endif %}">
                     <span class="material-symbols-outlined">calendar_month</span>
                     My Schedule
                 </a>

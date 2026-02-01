@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required  
 from django.contrib import messages
-from .models import Room, Course, ReservationRequest, User, ScheduledSession
-from django.db.models import Count
+from .models import Room, Course, ReservationRequest, User, ScheduledSession, Filiere
+from django.db.models import Count,Q
 from .forms import ReservationForm, CourseForm, TeacherForm, RoomSearchForm
 from django.shortcuts import render, redirect, get_object_or_404 
 import json  
@@ -22,6 +22,8 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 # --- Make sure this import is at the very top of the file! ---
 from .models import Course  
+from django.db.models import Q
+from django.utils import timezone
 
 
 from .forms import CourseForm  # <--- Make sure this is here
@@ -76,38 +78,169 @@ def admin_dashboard(request):
     return render(request, 'scheduler/dashboard.html', context)
 #  (Member 2: Teachers, Students, & Generate)
 
-
 @login_required
 def teacher_timetable(request):
-    # GOAL: Show courses assigned to the logged-in teacher (Sanae)
-    my_sessions = ScheduledSession.objects.filter(course__teacher=request.user).order_by('day', 'start_hour')
+    """Dedicated timetable page for teachers with Rowspan logic"""
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    hours = range(8, 19) # 8 to 18
+    
+    # 1. Get all sessions for this teacher
+    sessions = ScheduledSession.objects.filter(
+        course__teacher=request.user
+    ).select_related('course', 'room', 'course__filiere')
+
+    # 2. Calculate stats BEFORE building the grid
+    # Total sessions count
+    total_sessions = sessions.count()
+    
+    # Weekly hours calculation
+    weekly_hours = sum([(s.end_hour - s.start_hour) for s in sessions])
+    
+    # Today's sessions
+    from datetime import datetime
+    today_name = datetime.now().strftime('%A')
+    today_sessions_count = sessions.filter(day=today_name).count()
+    
+    # Next class today
+    next_class = sessions.filter(day=today_name, start_hour__gte=datetime.now().hour).order_by('start_hour').first()
+
+    # 3. Build a quick lookup dictionary: (day, start_hour) -> session
+    session_map = {}
+    for s in sessions:
+        session_map[(s.day, s.start_hour)] = s
+
+    # 4. Build the Grid Matrix
+    timetable_data = []
+    
+    # Track which cells to skip because they are covered by a rowspan
+    # Format: set of (day, hour) strings/tuples
+    skip_slots = set()
+
+    for h in hours:
+        row = {'hour': h, 'slots': []}
+        for d in days:
+            if (d, h) in skip_slots:
+                # This slot is covered by a previous class (e.g., 9am covered by 8am class)
+                row['slots'].append({'type': 'skipped'})
+                continue
+
+            session = session_map.get((d, h))
+            
+            if session:
+                duration = session.end_hour - session.start_hour
+                # Mark future slots as skipped
+                for i in range(1, duration):
+                    skip_slots.add((d, h + i))
+                
+                row['slots'].append({
+                    'type': 'session',
+                    'session': session,
+                    'rowspan': duration
+                })
+            else:
+                row['slots'].append({'type': 'empty'})
+        
+        timetable_data.append(row)
 
     context = {
-        'sessions': my_sessions,
-        'user_name': request.user.username
+        'timetable_data': timetable_data, # <--- The new structured data
+        'days': days,
+        'next_class': next_class,
+        'today_sessions_count': today_sessions_count,
+        'sessions_count': total_sessions, # Total count - fixed variable name
+        'weekly_hours': weekly_hours,
+        'user_name': request.user.get_full_name() or request.user.username,
     }
     return render(request, 'scheduler/teacher_timetable.html', context)
 
 
-
 @login_required
 def student_timetable(request):
-    """The dedicated full-page schedule for students"""
-    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
-    next_class = sessions.first()
+    """Student timetable with proper rowspan handling (like teacher timetable)"""
+    student_group = request.user.student_group
+
+    if not student_group:
+        return render(request, 'scheduler/student_timetable.html', {
+            'error': 'You are not assigned to any group.'
+        })
+
+    # Get sessions for the student's group OR for the entire Filière (CM)
+    sessions = ScheduledSession.objects.filter(
+        Q(course__group=student_group) | 
+        Q(course__filiere=student_group.filiere, course__group__isnull=True)
+    ).select_related('course', 'room', 'course__teacher', 'course__filiere').order_by('day', 'start_hour')
+
+    # Prepare data structure like teacher timetable
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    hours = range(8, 19)  # 8 AM to 6 PM
     
+    # Create session map for quick lookup
+    session_map = {}
+    for s in sessions:
+        session_map[(s.day, s.start_hour)] = s
+    
+    # Track which cells to skip (covered by rowspan)
+    skip_slots = set()
+    
+    # Build the timetable grid
+    timetable_data = []
+    for h in hours:
+        row = {'hour': h, 'slots': []}
+        for d in days:
+            if (d, h) in skip_slots:
+                # This slot is covered by a previous multi-hour class
+                row['slots'].append({'type': 'skipped'})
+                continue
+
+            session = session_map.get((d, h))
+            
+            if session:
+                duration = session.end_hour - session.start_hour
+                # Mark future slots as skipped
+                for i in range(1, duration):
+                    skip_slots.add((d, h + i))
+                
+                row['slots'].append({
+                    'type': 'session',
+                    'session': session,
+                    'rowspan': duration
+                })
+            else:
+                row['slots'].append({'type': 'empty'})
+        
+        timetable_data.append(row)
+    
+    # Calculate stats
+    total_sessions = sessions.count()
+    weekly_hours = sum([(s.end_hour - s.start_hour) for s in sessions])
+    
+    # Find next class (better logic)
+    from datetime import datetime
+    today_name = datetime.now().strftime('%A')
+    current_hour = datetime.now().hour
+    
+    # Find next class today
+    next_class = sessions.filter(day=today_name, start_hour__gte=current_hour).order_by('start_hour').first()
+    if not next_class:
+        # If no more classes today, find first class tomorrow
+        next_day_index = (days.index(today_name) + 1) % len(days) if today_name in days else 0
+        next_class = sessions.filter(day=days[next_day_index]).order_by('start_hour').first()
+    
+    # Today's sessions count
+    today_sessions_count = sessions.filter(day=today_name).count()
+
     context = {
-        'sessions': sessions,
-        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        'hours': [9,10,11,12,13,14,15,16],
+        'timetable_data': timetable_data,
+        'days': days,
+        'hours': hours,
         'next_class': next_class,
-        'student_group': request.user.student_group,
-        'time_slots': [
-            {'label': '(9, 10):00', 'start': 9},
-            {'label': '(10, 12):00', 'start': 10},
-            {'label': '(14, 16):00', 'start': 14},
-        ]
+        'today_sessions_count': today_sessions_count,
+        'total_sessions': total_sessions,
+        'weekly_hours': weekly_hours,
+        'student_group': student_group,
+        'student_name': request.user.get_full_name() or request.user.username,
     }
+    
     return render(request, 'scheduler/student_timetable.html', context)
 
 
@@ -115,7 +248,7 @@ def student_timetable(request):
 @login_required
 def generate_timetable(request):
      # Security: Ensure only Admins can do this
-    if not request.user.is_authenticated or request.user.role == 'Teacher' or request.user.role == 'Student':
+    if not request.user.is_authenticated or request.user.role != 'A': 
         messages.error(request, "Accès refusé.")
         return redirect('login')
 
@@ -204,77 +337,94 @@ from django.shortcuts import render
 from .models import ScheduledSession
 
 
+
 def timetable_view(request):
     """
-    Displays the interactive calendar with dynamic dates for the current week.
+    Admin timetable page - HTML table version (like teacher timetable)
     """
-    sessions = ScheduledSession.objects.all()
-    events = []
-
-    # 1. Calculate the Monday of the CURRENT week
-    today = datetime.now().date()
-    # weekday() returns 0 for Monday, 6 for Sunday. 
-    # We subtract the current weekday number from today to get back to Monday.
-    monday_date = today - timedelta(days=today.weekday())
-
-    # 2. Dynamic Mapping: Map string days to Real Dates for this week
-    # If Monday is Jan 26th, Tuesday will be Jan 27th, etc.
-    sessions = ScheduledSession.objects.all()
-    events = []
+    # 1. Get all filières for dropdown
+    filieres = Filiere.objects.all().order_by('level', 'code')
     
-    # Date mapping logic... (Keep your existing date mapping here)
-    day_mapping = {
-        "Monday":    monday_date,
-        "Tuesday":   monday_date + timedelta(days=1),
-        "Wednesday": monday_date + timedelta(days=2),
-        "Thursday":  monday_date + timedelta(days=3),
-        "Friday":    monday_date + timedelta(days=4),
-        "Saturday":  monday_date + timedelta(days=5),
-        "Sunday":    monday_date + timedelta(days=6),
-        # Add French mapping just in case your DB has French values
-        "Lundi":     monday_date,
-        "Mardi":     monday_date + timedelta(days=1),
-        "Mercredi":  monday_date + timedelta(days=2),
-        "Jeudi":     monday_date + timedelta(days=3),
-        "Vendredi":  monday_date + timedelta(days=4),
-    }
-
+    # 2. Get selected filière or show all
+    selected_filiere_id = request.GET.get('filiere')
+    selected_filiere = None
+    
+    if selected_filiere_id:
+        try:
+            selected_filiere = Filiere.objects.get(id=selected_filiere_id)
+            # Filter sessions for this filière
+            sessions = ScheduledSession.objects.filter(
+                course__filiere=selected_filiere
+            ).select_related('course', 'room', 'course__teacher', 'course__filiere', 'course__group')
+        except Filiere.DoesNotExist:
+            sessions = ScheduledSession.objects.all().select_related(
+                'course', 'room', 'course__teacher', 'course__filiere', 'course__group'
+            )
+    else:
+        sessions = ScheduledSession.objects.all().select_related(
+            'course', 'room', 'course__teacher', 'course__filiere', 'course__group'
+        )
+    
+    # 3. Days and hours for the timetable
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    hours = range(8, 19)  # 8 AM to 6 PM
+    
+    # 4. Create a session map for quick lookup (like teacher timetable)
+    session_map = {}
+    skip_slots = set()
+    
     for session in sessions:
-        # Get the real date object for the session's day name
-        session_date = day_mapping.get(session.day)
-        day_num = day_mapping.get(session.day, "05")
+        session_map[(session.day, session.start_hour)] = session
+    
+    # 5. Build the timetable grid data
+    timetable_data = []
+    for h in hours:
+        row = {'hour': h, 'slots': []}
+        for d in days:
+            if (d, h) in skip_slots:
+                row['slots'].append({'type': 'skipped'})
+                continue
+            
+            session = session_map.get((d, h))
+            
+            if session:
+                duration = session.end_hour - session.start_hour
+                # Mark future slots as skipped
+                for i in range(1, duration):
+                    skip_slots.add((d, h + i))
+                
+                row['slots'].append({
+                    'type': 'session',
+                    'session': session,
+                    'rowspan': duration
+                })
+            else:
+                row['slots'].append({'type': 'empty'})
         
-        events.append({
-            'title': session.course.name,
-            # We send extra data to display inside the card
-            'extendedProps': {
-                'room': session.room.name,
-                'group': session.course.group_name, # <--- Added Group Name
-                'teacher': session.course.teacher.username
-            },
-            'start': f"2024-02-{day_num}T{session.start_hour:02d}:00:00",
-            'end': f"2024-02-{day_num}T{session.end_hour:02d}:00:00",
-            # We don't set colors here anymore. CSS will handle the "Blue" look.
-        })
-
-        if session_date:
-            # Format date as string: "2026-01-26"
-            date_str = session_date.strftime('%Y-%m-%d')
-
-            events.append({
-                'title': f"{session.course.name} ({session.room.name})",
-                # ISO Format: YYYY-MM-DDTHH:MM:SS
-                'start': f"{date_str}T{session.start_hour:02d}:00:00",
-                'end': f"{date_str}T{session.end_hour:02d}:00:00",
-                'color': '#3788d8' # Default Blue
-            })
-
+        timetable_data.append(row)
+    
+    # 6. Calculate stats
+    total_sessions = sessions.count()
+    weekly_hours = sum([(s.end_hour - s.start_hour) for s in sessions])
+    
+    # Get today's sessions count
+    from datetime import datetime
+    today_name = datetime.now().strftime('%A')
+    today_sessions_count = sessions.filter(day=today_name).count()
+    
     context = {
-        'events_json': json.dumps(events),
-        # Pass the calculated Monday date to the template
-        'start_date': monday_date.strftime('%Y-%m-%d') 
+        'filieres': filieres,
+        'selected_filiere': selected_filiere,
+        'timetable_data': timetable_data,
+        'days': days,
+        'hours': hours,
+        'total_sessions': total_sessions,
+        'weekly_hours': weekly_hours,
+        'today_sessions_count': today_sessions_count,
     }
+    
     return render(request, 'scheduler/timetable.html', context)
+
 
 
 def add_teacher(request):
@@ -369,20 +519,57 @@ def teacher_dashboard(request):
     return render(request, 'scheduler/teacher_dashboard.html', context)
 
 #Added by Adjii:
+@login_required
 def student_dashboard(request):
-    # Filter for Mohammed's group
-    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
+    # 1. Setup the basic grid variables
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    hours = range(8, 19)
     
-    # Context for the dashboard
+    user = request.user
+    student_group = user.student_group
+    
+    # 2. Safety check for group
+    if not student_group:
+        return render(request, 'scheduler/student_dashboard.html', {
+            'days': days, 'hours': hours, 'sessions': [],
+            'error_message': 'No group assigned.'
+        })
+
+    # 3. DEFINE SESSIONS FIRST (This fixes the NameError)
+    sessions = ScheduledSession.objects.filter(
+        Q(course__group=student_group) | 
+        Q(course__filiere=student_group.filiere, course__session_type='CM')
+    ).select_related('course', 'room', 'course__teacher')
+
+    # 4. Weekend / Next Up Logic
+    now = timezone.localtime()
+    today_name = now.strftime('%A')
+    current_hour = now.hour
+    
+    search_day = today_name
+    status_label = "NEXT UP"
+
+    if today_name == "Sunday":
+        search_day = "Monday"
+        status_label = "MONDAY MORNING"
+        # Find first class of Monday
+        next_class = sessions.filter(day=search_day).order_by('start_hour').first()
+    else:
+        # Find next class for today
+        next_class = sessions.filter(day=today_name, end_hour__gt=current_hour).order_by('start_hour').first()
+
+    # 5. Send everything to the template
     context = {
+        'student_group': student_group,
         'sessions': sessions,
-        'next_class': sessions.first(),
-        'student_group': request.user.student_group,
-        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        'hours': [9, 10, 11, 12,13, 14, 15, 16,17,18], # These must be integers to match session.start_hour
+        'next_class': next_class,
+        'status_label': status_label, # Use this in your HTML badge
+        'days': days,
+        'hours': hours,
+        'today_name': today_name,
+        'course_count': sessions.values('course').distinct().count(),
     }
     return render(request, 'scheduler/student_dashboard.html', context)
-
 
 #Adjii added this for the generate schedule button
 @login_required
@@ -477,15 +664,33 @@ def student_timetable_view(request):
         'time_slots': time_slots,
         'schedule_grid': schedule_grid
     })""" ##Possibly delete 
+
+# Make sure Q is imported at the top of the file!
+from django.db.models import Q 
+
+@login_required
 def student_classes(request):
-    # Fetch all courses assigned to this student's group
-    courses = Course.objects.filter(group_name=request.user.student_group)
+    """List of all courses for the student (CM + TD/TP)"""
+    student_group = request.user.student_group
+    
+    if not student_group:
+        return render(request, 'scheduler/student_classes.html', {
+            'courses': [],
+            'error': 'No group assigned.'
+        })
+
+    # Logic: Get courses for THIS Group (TD/TP) OR for the whole Filière (CM)
+    courses = Course.objects.filter(
+        Q(group=student_group) | 
+        Q(filiere=student_group.filiere, group__isnull=True)
+    ).select_related('teacher', 'filiere').order_by('name')
     
     context = {
         'courses': courses,
-        'student_group': request.user.student_group,
+        'student_group': student_group,
     }
     return render(request, 'scheduler/student_classes.html', context)
+
 
 def add_session(request):
     # Everything below must be INDENTED (Tabbed in)
@@ -525,6 +730,7 @@ def delete_teacher(request, teacher_id):
     
     # Show a confirmation page before deleting
     return render(request, 'scheduler/confirm_delete.html', {'teacher': teacher})
+
 
 
 
@@ -696,3 +902,467 @@ def delete_course(request, course_id):
         return redirect('course_list')
     
     return render(request, 'scheduler/confirm_delete_course.html', {'course': course})
+
+
+
+from django.http import HttpResponse
+import csv
+import json
+from datetime import datetime
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+import io
+
+# 1. SIMPLIFIED Helper function
+def get_filtered_sessions_simple(request):
+    """Simplified version to get sessions"""
+    user = request.user
+    selected_filiere_id = request.GET.get('filiere')
+    
+    if user.role == 'A':
+        # Admin: all sessions
+        queryset = ScheduledSession.objects.all()
+        
+        # Apply filière filter if specified
+        if selected_filiere_id and selected_filiere_id != 'None':
+            queryset = queryset.filter(course__filiere_id=selected_filiere_id)
+            
+    elif user.role == 'T':
+        # Teacher: only their sessions
+        queryset = ScheduledSession.objects.filter(course__teacher=user)
+        
+        if selected_filiere_id and selected_filiere_id != 'None':
+            queryset = queryset.filter(course__filiere_id=selected_filiere_id)
+            
+    else:
+        # Student
+        if not user.student_group:
+            return ScheduledSession.objects.none()
+        
+        queryset = ScheduledSession.objects.filter(
+            Q(course__group=user.student_group) | 
+            Q(course__filiere=user.student_group.filiere, course__group__isnull=True)
+        )
+    
+    return queryset.select_related('course', 'room', 'course__teacher', 'course__filiere', 'course__group')
+
+# 2. SIMPLIFIED Excel Export (This will work!)
+@login_required
+def export_excel(request):
+    """Export timetable as Excel - SIMPLIFIED VERSION"""
+    # Get sessions
+    sessions = get_filtered_sessions_simple(request)
+    
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Emploi du Temps"
+    
+    # Title
+    ws['A1'] = "EMPLOI DU TEMPS UNIVERSITAIRE"
+    ws['A1'].font = Font(bold=True, size=16, color="366092")
+    
+    # Info
+    ws['A2'] = f"Généré le: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    ws['A3'] = f"Généré par: {request.user.get_full_name() or request.user.username}"
+    ws['A4'] = f"Rôle: {request.user.get_role_display()}"
+    
+    # Add filter info if applicable
+    selected_filiere_id = request.GET.get('filiere')
+    if selected_filiere_id and selected_filiere_id != 'None':
+        try:
+            filiere = Filiere.objects.get(id=selected_filiere_id)
+            ws['A5'] = f"Filière: {filiere.name} ({filiere.code})"
+        except:
+            pass
+    
+    # Simple list format (easier to debug)
+    ws['A7'] = "LISTE DES SÉANCES"
+    ws['A7'].font = Font(bold=True, size=14)
+    
+    # Headers
+    headers = ["Cours", "Type", "Enseignant", "Salle", "Jour", "Heure début", "Heure fin", "Groupe/Filière"]
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=8, column=col)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="5B9BD5", end_color="5B9BD5", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Data rows
+    row = 9
+    for session in sessions:
+        # Get group/filière info
+        if session.course.group:
+            group_info = f"Groupe: {session.course.group.name}"
+        else:
+            group_info = f"Filière: {session.course.filiere.code}"
+        
+        # Write data
+        ws.cell(row=row, column=1, value=session.course.name)
+        ws.cell(row=row, column=2, value=session.course.get_session_type_display())
+        ws.cell(row=row, column=3, value=session.course.teacher.get_full_name() or session.course.teacher.username)
+        ws.cell(row=row, column=4, value=session.room.name)
+        ws.cell(row=row, column=5, value=session.day)
+        ws.cell(row=row, column=6, value=f"{session.start_hour}:00")
+        ws.cell(row=row, column=7, value=f"{session.end_hour}:00")
+        ws.cell(row=row, column=8, value=group_info)
+        
+        # Color by session type
+        fill_color = "FFFFFF"  # Default white
+        
+        if session.course.session_type == 'CM':
+            fill_color = "E2EFDA"  # Light green
+        elif session.course.session_type == 'TD':
+            fill_color = "FFF2CC"  # Light yellow
+        elif session.course.session_type == 'TP':
+            fill_color = "DDEBF7"  # Light blue
+        
+        # Apply color to row
+        for col in range(1, 9):
+            ws.cell(row=row, column=col).fill = PatternFill(
+                start_color=fill_color, end_color=fill_color, fill_type="solid"
+            )
+        
+        row += 1
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = min(max_length + 2, 30)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="emploi_du_temps.xlsx"'
+    wb.save(response)
+    return response
+
+from django.template.loader import render_to_string
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, A4, letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch, cm
+from reportlab.lib.enums import TA_CENTER
+from datetime import datetime
+import pytz
+
+# 3. PDF Export
+@login_required
+def export_pdf(request):
+    """Export timetable as PDF with complete grid layout"""
+    # Get sessions using the same logic as export_excel
+    sessions = get_filtered_sessions_simple(request)
+    
+    # Get selected filière for PDF title
+    selected_filiere_id = request.GET.get('filiere')
+    selected_filiere = None
+    if selected_filiere_id and selected_filiere_id != 'None':
+        try:
+            selected_filiere = Filiere.objects.get(id=selected_filiere_id)
+        except Filiere.DoesNotExist:
+            pass
+    
+    # Prepare data for PDF - COMPLETE TIME SLOTS VERSION
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    
+    # Define ALL possible time slots (standard university schedule)
+    time_slots = [
+        {"start": 8, "end": 10, "label": "8:00-10:00"},
+        {"start": 10, "end": 12, "label": "10:00-12:00"},
+        {"start": 12, "end": 14, "label": "12:00-14:00"},
+        {"start": 14, "end": 16, "label": "14:00-16:00"},
+        {"start": 16, "end": 18, "label": "16:00-18:00"},
+        {"start": 18, "end": 20, "label": "18:00-20:00"},
+    ]
+    
+    # Organize sessions by day and start hour for quick lookup
+    session_dict = {}
+    for session in sessions:
+        day_key = session.day
+        if day_key not in session_dict:
+            session_dict[day_key] = {}
+        session_dict[day_key][session.start_hour] = session
+    
+    # Create table data and track session cells for styling
+    table_data = []
+    session_cells_info = []  # Store session cell information separately
+    
+    # Header row
+    header_row = ["TIME"]
+    for day in days:
+        header_row.append(day[:3].upper())
+    table_data.append(header_row)
+    
+    # Add rows for each time slot
+    for slot_idx, slot in enumerate(time_slots):
+        row_idx = slot_idx + 1  # +1 for header row
+        row = [slot["label"]]
+        
+        for day_idx, day in enumerate(days):
+            col_idx = day_idx + 1  # +1 for TIME column
+            cell_content = ""
+            
+            # Check if there's a session starting in this time slot
+            if day in session_dict:
+                # Check all hours in this slot for starting sessions
+                for hour in range(slot["start"], slot["end"]):
+                    if hour in session_dict[day]:
+                        session = session_dict[day][hour]
+                        
+                        # Format session info - cleaner formatting
+                        session_type_display = session.course.get_session_type_display()
+                        
+                        # Teacher name
+                        teacher_name = session.course.teacher.get_full_name() or session.course.teacher.username
+                        if len(teacher_name) > 15:
+                            teacher_name = teacher_name.split()[0]
+                        
+                        # Course name
+                        course_name = session.course.name
+                        if len(course_name) > 20:
+                            course_name = course_name[:17] + "..."
+                        
+                        cell_content = f"<b>{course_name}</b><br/>"
+                        cell_content += f"{session_type_display}<br/>"
+                        cell_content += f"Room: {session.room.name}<br/>"
+                        cell_content += f"Prof: {teacher_name}"
+                        
+                        # Store session cell info for styling
+                        session_cells_info.append({
+                            'row': row_idx,
+                            'col': col_idx,
+                            'session': session
+                        })
+                        break
+            
+            row.append(cell_content)
+        
+        table_data.append(row)
+    
+    # Create PDF
+    response = HttpResponse(content_type='application/pdf')
+    
+    # Set filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if selected_filiere:
+        filename = f"timetable_{selected_filiere.code}_{timestamp}.pdf"
+    elif request.user.role == 'T':
+        filename = f"timetable_teacher_{request.user.username}_{timestamp}.pdf"
+    elif request.user.role == 'S':
+        filename = f"timetable_student_{request.user.username}_{timestamp}.pdf"
+    else:
+        filename = f"timetable_all_{timestamp}.pdf"
+    
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Create the PDF document
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=landscape(A4),
+        rightMargin=0.3*inch,
+        leftMargin=0.3*inch,
+        topMargin=0.3*inch,
+        bottomMargin=0.3*inch
+    )
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=14,
+        alignment=TA_CENTER,
+        spaceAfter=8,
+        textColor=colors.HexColor('#1e3a8a')
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'SubtitleStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_CENTER,
+        spaceAfter=15,
+        textColor=colors.HexColor('#475569')
+    )
+    
+    header_style = ParagraphStyle(
+        'HeaderStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold',
+        textColor=colors.white
+    )
+    
+    time_style = ParagraphStyle(
+        'TimeStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    )
+    
+    session_style = ParagraphStyle(
+        'SessionStyle',
+        parent=styles['Normal'],
+        fontSize=7,
+        alignment=TA_CENTER,
+        leading=7
+    )
+    
+    empty_style = ParagraphStyle(
+        'EmptyStyle',
+        parent=styles['Normal'],
+        fontSize=7,
+        alignment=TA_CENTER,
+        textColor=colors.grey
+    )
+    
+    # Create story (content)
+    story = []
+    
+    # Title
+    if selected_filiere:
+        title = f"UNIVERSITY TIMETABLE - {selected_filiere.name}"
+    elif request.user.role == 'T':
+        title = f"TEACHER TIMETABLE - {request.user.get_full_name() or request.user.username}"
+    elif request.user.role == 'S':
+        title = f"STUDENT TIMETABLE - {request.user.username}"
+    else:
+        title = "COMPLETE UNIVERSITY TIMETABLE"
+    
+    story.append(Paragraph(title, title_style))
+    
+    # Subtitle
+    subtitle = f"Generated on: {datetime.now().strftime('%d/%m/%Y %H:%M')} | Total Sessions: {sessions.count()}"
+    story.append(Paragraph(subtitle, subtitle_style))
+    
+    # Convert table data to Paragraph objects
+    formatted_table_data = []
+    for row_idx, row in enumerate(table_data):
+        formatted_row = []
+        for col_idx, cell in enumerate(row):
+            if row_idx == 0:  # Header row
+                formatted_row.append(Paragraph(cell, header_style))
+            elif col_idx == 0:  # Time column
+                formatted_row.append(Paragraph(cell, time_style))
+            elif cell:  # Session cell
+                formatted_row.append(Paragraph(cell, session_style))
+            else:  # Empty cell
+                formatted_row.append(Paragraph("", empty_style))
+        formatted_table_data.append(formatted_row)
+    
+    # Create timetable table
+    table = Table(formatted_table_data, 
+                  colWidths=[0.9*inch] + [1.5*inch] * len(days),
+                  rowHeights=[0.4*inch] + [1.2*inch] * (len(time_slots)))
+    
+    # Apply table styling
+    table_style = TableStyle([
+        # Header styling
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        
+        # Time column styling
+        ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#f8fafc')),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),
+        ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
+        ('FONTSIZE', (0, 1), (0, -1), 8),
+        
+        # Grid lines
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+        ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#94a3b8')),
+        
+        # Cell alignment and padding for all cells
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+        ('VALIGN', (1, 1), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ])
+    
+    # Apply background colors to session cells
+    for cell_info in session_cells_info:
+        session = cell_info['session']
+        
+        # Set background color based on session type
+        if session.course.session_type == 'CM':
+            bg_color = colors.HexColor('#dbeafe')  # Light blue for CM
+        elif session.course.session_type == 'TD':
+            bg_color = colors.HexColor('#d1fae5')  # Light green for TD
+        elif session.course.session_type == 'TP':
+            bg_color = colors.HexColor('#fef3c7')  # Light yellow for TP
+        else:
+            bg_color = colors.HexColor('#f1f5f9')  # Light gray
+        
+        table_style.add('BACKGROUND', 
+                      (cell_info['col'], cell_info['row']),
+                      (cell_info['col'], cell_info['row']),
+                      bg_color)
+    
+    table.setStyle(table_style)
+    
+    # Add table to story
+    story.append(table)
+    story.append(Spacer(1, 12))
+    
+    # Add legend
+    legend_style = ParagraphStyle(
+        'LegendStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        spaceAfter=4,
+        alignment=TA_CENTER
+    )
+    
+    legend_text = """
+    <b>Legend:</b> 
+    <font color="#1d4ed8">■ CM (Lecture)</font> | 
+    <font color="#047857">■ TD (Tutorial)</font> | 
+    <font color="#b45309">■ TP (Lab)</font>
+    """
+    story.append(Paragraph(legend_text, legend_style))
+    
+    # Add statistics
+    total_hours = sum((s.end_hour - s.start_hour) for s in sessions)
+    unique_days = len(set(s.day for s in sessions))
+    unique_rooms = len(set(s.room.name for s in sessions))
+    
+    stats_text = f"""
+    <b>Statistics:</b> Total Sessions: {sessions.count()} | Total Hours: {total_hours} | Days: {unique_days} | Rooms Used: {unique_rooms}
+    """
+    story.append(Paragraph(stats_text, legend_style))
+    
+    # Build PDF
+    try:
+        doc.build(story)
+        return response
+    except Exception as e:
+        # Simple error response
+        import traceback
+        error_details = traceback.format_exc()
+        return HttpResponse(f"PDF Generation Error: {str(e)}\n\nDetails:\n{error_details}", 
+                          content_type='text/plain')

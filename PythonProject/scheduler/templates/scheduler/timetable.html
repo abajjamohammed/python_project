@@ -1,139 +1,473 @@
 {% extends 'scheduler/base.html' %}
+{% block dynamic_title %}University Schedule{% endblock dynamic_title %}
 
 {% block content %}
-<div class="card shadow-none border-0 bg-transparent">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold text-dark">University Schedule</h4>
-        <div>
-            <a href="#" class="btn btn-light border text-dark btn-sm"><i class="fas fa-print"></i> Print</a>
-            <a href="{% url 'add_session' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Session</a>
-        </div>
-    </div>
 
-    <!-- The Calendar -->
-    <div class="card-body p-0 bg-white rounded shadow-sm">
-        <div id='calendar'></div>
-    </div>
-</div>
-
-<!-- FullCalendar JS -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek',
-            initialDate: '2024-02-05',
-            headerToolbar: {
-                left: '', // Hide default navigation for a cleaner look
-                center: '',
-                right: '' 
-            },
-           
-            initialDate: '{{ start_date }}', 
-            dayHeaderFormat: { weekday: 'long' }, // Show "MONDAY" instead of "Mon 2/5"
-            
-            slotMinTime: '08:00:00',
-            slotMaxTime: '18:00:00',
-            allDaySlot: false,
-            hiddenDays: [0, 6], // Hide Sun/Sat
-            height: 'auto',
-            slotDuration: '01:00:00', // 1 hour slots like your image
-            expandRows: true, // Make rows fill the height
-            
-            events: {{ events_json|safe }},
-            
-            // --- THIS CREATES THE CARD CONTENT ---
-            eventContent: function(arg) {
-                let title = arg.event.title;
-                let room = arg.event.extendedProps.room;
-                let group = arg.event.extendedProps.group;
-                
-                return { html: `
-                    <div class="custom-event-card">
-                        <div class="event-title">${title}</div>
-                        <div class="event-room">Room ${room}</div>
-                        <div class="event-group">GROUP: ${group}</div>
-                    </div>
-                `};
-            }
-        });
-        
-        calendar.render();
-    });
-</script>
-
-<style>
-    /* --- 1. THE GRID STYLING --- */
-    
-    /* Remove borders to make it look clean */
-    .fc-theme-standard td, .fc-theme-standard th {
-        border: 1px solid #f0f0f0;
-    }
-    
-    /* Header (MONDAY, TUESDAY...) */
-    .fc-col-header-cell-cushion {
-        color: #000;
-        text-transform: uppercase;
-        font-weight: 800; /* Extra Bold */
-        font-size: 0.8rem;
-        padding: 15px 0;
-        text-decoration: none !important; 
-    }
-    
-    /* Time Labels (8:00, 9:00) */
-    .fc-timegrid-slot-label-cushion {
-        font-weight: 700;
-        color: #555;
-        font-size: 0.9rem;
-    }
-
-    /* --- 2. THE CARD STYLING (The Blue Box) --- */
-    
-    /* Remove default FullCalendar styles */
-    .fc-v-event {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* The Content Box */
-    .custom-event-card {
-        background-color: #eff6ff; /* Light Blue Background */
-        border-left: 5px solid #2563eb; /* Thick Blue Left Border */
-        border-radius: 6px;
-        padding: 8px 12px;
-        height: 100%;
+function exportTimetableAsImage() {
+    // Show loading message
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        color: white;
         display: flex;
         flex-direction: column;
         justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        font-size: 18px;
+    `;
+    overlay.innerHTML = `
+        <div style="text-align: center;">
+            <div class="spinner-border text-light mb-3" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <p>Génération de l'image...</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    // Get the content to export
+    const element = document.querySelector('.container-fluid') || 
+                    document.querySelector('.timetable-card') || 
+                    document.querySelector('table');
+    
+    if (!element) {
+        alert("Impossible de trouver le contenu à exporter.");
+        overlay.remove();
+        return;
+    }
+    
+    // Hide elements that shouldn't be in the screenshot
+    const elementsToHide = document.querySelectorAll('.no-print, .dropdown, .btn');
+    const originalDisplay = [];
+    
+    elementsToHide.forEach(el => {
+        originalDisplay.push(el.style.display);
+        el.style.display = 'none';
+    });
+    
+    // Capture the element
+    html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true
+    }).then(canvas => {
+        // Restore hidden elements
+        elementsToHide.forEach((el, index) => {
+            el.style.display = originalDisplay[index] || '';
+        });
+        
+        // Remove overlay
+        overlay.remove();
+        
+        // Create download link
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().split('T')[0];
+        link.download = `emploi_du_temps_${timestamp}.png`;
+        link.href = canvas.toDataURL('image/png');
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+    }).catch(error => {
+        console.error('Erreur:', error);
+        elementsToHide.forEach((el, index) => {
+            el.style.display = originalDisplay[index] || '';
+        });
+        overlay.remove();
+        alert('Erreur lors de l\'export. Veuillez réessayer.');
+    });
+}
+</script>
+
+<style>
+    .timetable-header {
+        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-left: 4px solid #3b82f6;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+
+    .timetable-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         overflow: hidden;
     }
 
-    /* Typography inside the card */
-    .event-title {
-        color: #1e40af; /* Dark Blue Text */
+    .table-responsive {
+        border-radius: 12px;
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    thead {
+        background: #f8fafc;
+    }
+
+    th {
+        padding: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+    .time-cell {
+        font-weight: 600;
+        color: #64748b;
+        text-align: center;
+        background: #f8fafc;
+        width: 80px;
+    }
+
+    td {
+        padding: 0;
+        height: 80px;
+        border: 1px solid #e2e8f0;
+        vertical-align: top;
+    }
+
+    .session-box {
+        background: linear-gradient(135deg, #eef4ff 0%, #e0f2fe 100%);
+        border-left: 4px solid #3b82f6;
+        border-radius: 6px;
+        padding: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: transform 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .session-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(59, 130, 246, 0.2);
+    }
+
+    .session-title {
+        color: #1e40af;
         font-weight: 700;
         font-size: 0.9rem;
-        margin-bottom: 2px;
+        margin-bottom: 0.25rem;
     }
 
-    .event-room {
-        color: #64748b; /* Grey Text */
-        font-size: 0.8rem;
-    }
-
-    .event-group {
-        margin-top: 5px;
-        color: #000;
-        font-weight: 800;
+    .session-detail {
+        color: #64748b;
         font-size: 0.75rem;
-        text-transform: uppercase;
+        margin-top: 0.15rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .filiere-badge {
+        background: rgba(59, 130, 246, 0.15);
+        color: #1e40af;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+
+    .group-badge {
+        background: rgba(16, 185, 129, 0.15);
+        color: #047857;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 0.25rem;
+    }
+
+    /* Filter dropdown styles */
+    .filter-dropdown .btn {
+        min-width: 200px;
+        text-align: left;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    @media print {
+        .sidebar-wrapper, .top-navbar, .no-print, .btn, .logout-button, aside, nav, .stats-row, .filter-dropdown {
+            display: none !important;
+        }
+        
+        .main-wrapper, main, .content-area, .container, .container-fluid {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        table {
+            font-size: 8pt !important;
+        }
+
+        th {
+            padding: 6px !important;
+            background-color: #f8f9fa !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        td {
+            height: 50px !important;
+        }
+
+        .session-box {
+            padding: 4px !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        @page {
+            size: landscape;
+            margin: 0.5cm;
+        }
     }
 </style>
+
+<div class="container-fluid py-4">
+    
+    <!-- Header with Filter -->
+    <div class="timetable-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-1">University Schedule</h2>
+                <p class="mb-0" style="opacity: 0.9;">
+                    {% if selected_filiere %}
+                        {{ selected_filiere.name }} Timetable
+                    {% else %}
+                        All Filières Timetable
+                    {% endif %}
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <!-- Filter Dropdown -->
+                <div class="dropdown filter-dropdown no-print">
+                    <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-filter me-2"></i>
+                        {% if selected_filiere %}
+                            {{ selected_filiere.name }}
+                        {% else %}
+                            All Filières
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'timetable' %}">All Filières</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% for filiere in filieres %}
+                        <li>
+                            <a class="dropdown-item {% if selected_filiere and selected_filiere.id == filiere.id %}active{% endif %}" 
+                               href="{% url 'timetable' %}?filiere={{ filiere.id }}">
+                                {{ filiere.name }} ({{ filiere.code }})
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+        
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-download me-2"></i> Exporter
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'export_excel' %}{% if selected_filiere %}?filiere={{ selected_filiere.id }}{% endif %}">
+                                <i class="fas fa-file-excel text-success me-2"></i> Excel (.xlsx)
+                            </a>
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="{% url 'export_pdf' %}{% if selected_filiere %}?filiere={{ selected_filiere.id }}{% endif %}">
+                                <i class="fas fa-file-pdf text-danger me-2"></i> PDF (.pdf)
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportTimetableAsImage()">
+                                <i class="fas fa-image text-info me-2"></i> Image (.png)
+                            </a>
+                        </li>
+                        </ul>
+                </div>
+
+                <button onclick="window.print();" class="btn btn-light shadow-sm px-4 no-print">
+                    <i class="fas fa-print me-2"></i>
+                    Print
+                </button>
+                <a href="{% url 'add_session' %}" class="btn btn-primary px-4 no-print">
+                    <i class="fas fa-plus me-2"></i>
+                    Add Session
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row no-print">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_sessions }}</div>
+            <div class="stat-label">Total Sessions</div>
+        </div>
+        <div class="stat-card" style="border-left-color: #10b981;">
+            <div class="stat-value">{{ weekly_hours }}</div>
+            <div class="stat-label">Weekly Hours</div>
+        </div>
+        <div class="stat-card" style="border-left-color: #f59e0b;">
+             <div class="stat-value">{{ today_sessions_count }}</div>
+             <div class="stat-label">Sessions Today</div>
+         </div>
+        <div class="stat-card" style="border-left-color: #8b5cf6;">
+            <div class="stat-value">
+                {% if selected_filiere %}
+                    1
+                {% else %}
+                    {{ filieres|length }}
+                {% endif %}
+            </div>
+            <div class="stat-label">
+                {% if selected_filiere %}
+                    Filière
+                {% else %}
+                    Total Filières
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Timetable Table -->
+    <div class="timetable-card">
+        <div class="table-responsive">
+            <table class="table mb-0 text-center align-middle">
+                <thead>
+                    <tr>
+                        <th class="time-cell">TIME</th>
+                        {% for day in days %}
+                        <th style="width: 18%;">{{ day|upper }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in timetable_data %}
+                    <tr>
+                        <!-- Time Column -->
+                        <td class="time-cell">{{ row.hour }}:00</td>
+
+                        <!-- Day Columns -->
+                        {% for slot in row.slots %}
+                            
+                            {% if slot.type == 'session' %}
+                                <!-- SESSION CELL (With Rowspan) -->
+                                <td rowspan="{{ slot.rowspan }}" class="p-1 align-top">
+                                    <div class="session-box h-100">
+                                        <div class="session-title">{{ slot.session.course.name }}</div>
+                                        
+                                        <span class="filiere-badge">{{ slot.session.course.filiere.code }}</span>
+                                        <span class="group-badge">{{ slot.session.course.get_session_type_display }}</span>
+                                        
+                                        <div class="session-detail">
+                                            <i class="fas fa-door-open me-1" style="font-size: 0.7rem;"></i>
+                                            <span>{{ slot.session.room.name }}</span>
+                                        </div>
+                                        
+                                        <div class="session-detail">
+                                            <i class="fas fa-user me-1" style="font-size: 0.7rem;"></i>
+                                            <span>{{ slot.session.course.teacher.get_full_name|default:slot.session.course.teacher.username }}</span>
+                                        </div>
+                                        
+                                        <div class="session-detail">
+                                            <i class="fas fa-users me-1" style="font-size: 0.7rem;"></i>
+                                            <span>
+                                                {% if slot.session.course.group %}
+                                                    {{ slot.session.course.group.name }}
+                                                {% else %}
+                                                    All Groups
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="session-detail">
+                                            <i class="fas fa-clock me-1" style="font-size: 0.7rem;"></i>
+                                            <span>{{ slot.session.start_hour }}:00 - {{ slot.session.end_hour }}:00</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            
+                            {% elif slot.type == 'skipped' %}
+                                <!-- SKIPPED CELL (Do not render anything) -->
+                                
+                            {% else %}
+                                <!-- EMPTY CELL -->
+                                <td></td>
+                            {% endif %}
+
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Export Button -->
+    <div class="text-center mt-4 no-print">
+        <a href="{% url 'export_timetable_csv' %}" class="btn btn-outline-primary px-4 me-2">
+            <i class="fas fa-file-excel me-2"></i>
+            Export to Excel
+        </a>
+        {% if selected_filiere %}
+        <a href="{% url 'timetable' %}" class="btn btn-outline-secondary px-4">
+            <i class="fas fa-eye me-2"></i>
+            View All Filières
+        </a>
+        {% endif %}
+    </div>
+
+</div>
 {% endblock %}
+

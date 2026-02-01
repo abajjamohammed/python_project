@@ -1,10 +1,10 @@
 {% extends 'scheduler/base.html' %}
-{% block dynamic_title %}Time-Table{% endblock dynamic_title %}
+{% block dynamic_title %}My Schedule{% endblock dynamic_title %}
 
 {% block content %}
 <style>
     .timetable-header {
-        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 2rem;
         border-radius: 16px;
@@ -35,7 +35,7 @@
         border-radius: 12px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        border-left: 4px solid #0ea5e9;
+        border-left: 4px solid #3b82f6;
     }
 
     .stat-value {
@@ -79,6 +79,7 @@
         font-size: 0.85rem;
     }
 
+
     .time-cell {
         font-weight: 600;
         color: #64748b;
@@ -87,43 +88,46 @@
         width: 80px;
     }
 
+/* Update these specific classes */
+    
     td {
-        padding: 0;
-        height: 80px;
+        padding: 0; /* Remove padding so rowspan fits perfectly */
+        height: 80px; /* Base height for 1 hour */
         border: 1px solid #e2e8f0;
         vertical-align: top;
     }
 
     .session-box {
-        background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
-        border-left: 4px solid #0ea5e9;
+        background: linear-gradient(135deg, #eef4ff 0%, #e0f2fe 100%);
+        border-left: 4px solid #3b82f6;
         border-radius: 6px;
         padding: 0.75rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         transition: transform 0.2s;
-        height: 100%;
+        /* Make sure it fills the rowspan height */
+        height: 100%; 
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: center; /* Center content vertically */
     }
 
+    /* Keep the rest of your styles (hover effects, headers, etc.) */
     .session-box:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(14, 165, 233, 0.2);
+        box-shadow: 0 6px 15px rgba(59, 130, 246, 0.2);
     }
 
     .session-title {
-        color: #0369a1;
+        color: #1e40af;
         font-weight: 700;
-        font-size: 0.85rem;
-        margin-bottom: 0.25rem;
-        line-height: 1.2;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
     }
 
-    .session-type {
-        background: rgba(14, 165, 233, 0.15);
-        color: #0369a1;
-        padding: 0.15rem 0.5rem;
+    .session-badge {
+        background: rgba(59, 130, 246, 0.15);
+        color: #1e40af;
+        padding: 0.2rem 0.5rem;
         border-radius: 4px;
         font-size: 0.7rem;
         font-weight: 600;
@@ -134,39 +138,14 @@
     .session-detail {
         color: #64748b;
         font-size: 0.75rem;
-        margin-top: 0.15rem;
+        margin-top: 0.25rem;
         display: flex;
         align-items: center;
         gap: 0.25rem;
     }
 
-    .session-group {
-        background: rgba(16, 185, 129, 0.15);
-        color: #047857;
-        padding: 0.15rem 0.4rem;
-        border-radius: 4px;
-        font-size: 0.65rem;
-        font-weight: 600;
-        margin-top: 0.25rem;
-        display: inline-block;
-    }
-
-    .session-filiere {
-        background: rgba(139, 92, 246, 0.15);
-        color: #7c3aed;
-        padding: 0.15rem 0.4rem;
-        border-radius: 4px;
-        font-size: 0.65rem;
-        font-weight: 600;
-        margin-top: 0.25rem;
-        display: inline-block;
-    }
-
-    .session-teacher {
-        color: #64748b;
-        font-size: 0.7rem;
-        font-style: italic;
-        margin-top: 0.25rem;
+    .session-detail .material-symbols-outlined {
+        font-size: 14px;
     }
 
     @media print {
@@ -192,6 +171,7 @@
 
         td {
             height: 50px !important;
+            padding: 2px !important;
         }
 
         .session-box {
@@ -212,13 +192,12 @@
     <div class="timetable-header">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-bold mb-1">My Weekly Schedule</h2>
-                <p class="mb-0" style="opacity: 0.9;">
-                    {{ student_name }} - {{ student_group.filiere.code }} {{ student_group.name }}
-                </p>
+                <h2 class="fw-bold mb-1">My Teaching Schedule</h2>
+                <p class="mb-0" style="opacity: 0.9;">{{ user_name }}'s Weekly Timetable</p>
             </div>
             <button onclick="window.print();" class="btn btn-light shadow-sm px-4 no-print">
-                <i class="fas fa-print me-2"></i> Print (PDF)
+                <span class="material-symbols-outlined me-2" style="vertical-align: middle; font-size: 18px;">print</span>
+                Print (PDF)
             </button>
         </div>
     </div>
@@ -226,13 +205,11 @@
     <!-- Next Class Banner -->
     {% if next_class %}
     <div class="next-class-banner no-print">
-        <i class="fas fa-clock fa-2x"></i>
+        <span class="material-symbols-outlined" style="font-size: 48px;">schedule</span>
         <div>
-            <div class="fw-bold" style="font-size: 1.1rem;">Next Class</div>
-            <div>{{ next_class.course.name }} - {{ next_class.room.name }}</div>
-            <div style="opacity: 0.9; font-size: 0.9rem;">
-                {{ next_class.day }}, {{ next_class.start_hour }}:00 - {{ next_class.end_hour }}:00
-            </div>
+            <div class="fw-bold" style="font-size: 1.1rem;">Next Class Today</div>
+            <div>{{ next_class.course.name }} ({{ next_class.course.get_session_type_display }}) - {{ next_class.room.name }}</div>
+            <div style="opacity: 0.9; font-size: 0.9rem;">{{ next_class.start_hour }}:00 - {{ next_class.end_hour }}:00</div>
         </div>
     </div>
     {% endif %}
@@ -240,8 +217,8 @@
     <!-- Stats -->
     <div class="stats-row no-print">
         <div class="stat-card">
-            <div class="stat-value">{{ total_sessions }}</div>
-            <div class="stat-label">Total Classes</div>
+            <div class="stat-value">{{ sessions_count }}</div>
+            <div class="stat-label">Total Sessions</div>
         </div>
         <div class="stat-card" style="border-left-color: #10b981;">
             <div class="stat-value">{{ weekly_hours }}</div>
@@ -251,13 +228,10 @@
              <div class="stat-value">{{ today_sessions_count }}</div>
              <div class="stat-label">Classes Today</div>
          </div>
-        <div class="stat-card" style="border-left-color: #8b5cf6;">
-            <div class="stat-value">{{ student_group.filiere.code }}</div>
-            <div class="stat-label">Filière</div>
-        </div>
     </div>
 
-    <!-- Timetable Table -->
+    <!-- Timetable -->
+   <!-- Timetable -->
     <div class="timetable-card">
         <div class="table-responsive">
             <table class="table mb-0 text-center align-middle">
@@ -265,7 +239,7 @@
                     <tr>
                         <th class="time-cell">TIME</th>
                         {% for day in days %}
-                        <th>{{ day|upper }}</th>
+                        <th style="width: 18%;">{{ day|upper }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
@@ -283,36 +257,26 @@
                                 <td rowspan="{{ slot.rowspan }}" class="p-1 align-top">
                                     <div class="session-box h-100">
                                         <div class="session-title">{{ slot.session.course.name }}</div>
+                                        <span class="session-badge">{{ slot.session.course.get_session_type_display }}</span>
                                         
-                                        <!-- Session Type Badge -->
-                                        <div class="session-type">{{ slot.session.course.get_session_type_display }}</div>
-                                        
-                                        <!-- Filière or Group Badge -->
-                                        {% if slot.session.course.session_type == 'CM' %}
-                                            <div class="session-filiere">
-                                                FILIÈRE: {{ slot.session.course.filiere.code }}
-                                            </div>
-                                        {% else %}
-                                            <div class="session-group">
-                                                GROUP: {{ slot.session.course.group.name }}
-                                            </div>
-                                        {% endif %}
-                                        
-                                        <!-- Room -->
                                         <div class="session-detail">
-                                            <i class="fas fa-door-open me-1" style="font-size: 0.7rem;"></i>
-                                            <span>Room {{ slot.session.room.name }}</span>
+                                            <span class="material-symbols-outlined">meeting_room</span>
+                                            <span>{{ slot.session.room.name }}</span>
                                         </div>
                                         
-                                        <!-- Teacher -->
                                         <div class="session-detail">
-                                            <i class="fas fa-user me-1" style="font-size: 0.7rem;"></i>
-                                            <span>{{ slot.session.course.teacher.get_full_name|default:slot.session.course.teacher.username }}</span>
+                                            <span class="material-symbols-outlined">groups</span>
+                                            <span>
+                                                {% if slot.session.course.group %}
+                                                    {{ slot.session.course.group }}
+                                                {% else %}
+                                                    {{ slot.session.course.filiere.code }} (All)
+                                                {% endif %}
+                                            </span>
                                         </div>
                                         
-                                        <!-- Time -->
                                         <div class="session-detail">
-                                            <i class="fas fa-clock me-1" style="font-size: 0.7rem;"></i>
+                                            <span class="material-symbols-outlined">schedule</span>
                                             <span>{{ slot.session.start_hour }}:00 - {{ slot.session.end_hour }}:00</span>
                                         </div>
                                     </div>
@@ -334,10 +298,10 @@
         </div>
     </div>
 
-    <!-- Export Button -->
+    <!-- Export Button (Bottom) -->
     <div class="text-center mt-4 no-print">
         <a href="{% url 'export_timetable_csv' %}" class="btn btn-outline-primary px-4">
-            <i class="fas fa-file-excel me-2"></i>
+            <span class="material-symbols-outlined me-2" style="vertical-align: middle; font-size: 18px;">download</span>
             Export to Excel
         </a>
     </div>
