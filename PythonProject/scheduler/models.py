@@ -8,6 +8,7 @@ class User(AbstractUser):
     # Le groupe de l'étudiant (ex: "G1", "Info-A"). 
     # blank=True car les Profs et Admin n'ont pas de groupe.
     student_group = models.CharField(max_length=50, blank=True, null=True) #added this bcs we need to know the group of the student :mohammed 25/01
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True) #added this bcs we need to know the group of the student :mateo 31/01
 
 # replaces rooms.py
 class Room(models.Model):

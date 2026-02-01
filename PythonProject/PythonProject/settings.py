@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -128,3 +130,9 @@ LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
 #To allow logging-out
 LOGOUT_ON_GET = True
+
+# Base URL for serving media files (images)
+MEDIA_URL = '/media/'
+
+# Path where media is stored on your computer
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

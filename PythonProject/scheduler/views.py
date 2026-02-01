@@ -14,6 +14,13 @@ from .forms import SessionForm
 from django.shortcuts import redirect
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import TeacherForm, TeacherEditForm # Import the new form
+from .models import TeacherUnavailability
+from .forms import TeacherUnavailabilityForm
+from .forms import ProfileForm
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+
 
 
 
@@ -423,31 +430,6 @@ def custom_logout(request):
 
 
 
-def find_free_rooms(request):
-    results = None
-    if request.method == 'POST':
-        form = RoomSearchForm(request.POST)
-        if form.is_valid():
-            day = form.cleaned_data['day']
-            start = form.cleaned_data['start_hour']
-            end = form.cleaned_data['end_hour']
-            
-            # 1. Get all rooms
-            all_rooms = Room.objects.all()
-            
-            # 2. Get occupied room IDs
-            occupied_ids = ScheduledSession.objects.filter(
-                day=day,
-                start_hour__lt=end,
-                end_hour__gt=start
-            ).values_list('room_id', flat=True)
-            
-            # 3. Filter
-            results = all_rooms.exclude(id__in=occupied_ids)
-    else:
-        form = RoomSearchForm()
-    
-    return render(request, 'scheduler/find_room.html', {'form': form, 'rooms': results})
 """def student_timetable_view(request):
 def student_timetable_view(request):
     # 1. Define the specific time slots from your image
@@ -543,7 +525,7 @@ def delete_teacher(request, teacher_id):
 
 @login_required
 def find_rooms(request):
-    """Search for available rooms based on criteria"""
+    """Search for available rooms - OPTIMIZED VERSION"""
     available_rooms = []
     search_performed = False
     
@@ -557,42 +539,118 @@ def find_rooms(request):
         # Start with all rooms
         rooms = Room.objects.all()
         
-        # Filter by capacity if specified
+        # Filter by capacity
         if min_capacity:
             rooms = rooms.filter(capacity__gte=int(min_capacity))
         
-        # Check availability for each room
-        for room in rooms:
-            is_available = True
+        if day and start_hour and end_hour:
+            # Get occupied room IDs from scheduled sessions (EFFICIENT)
+            occupied_by_sessions = ScheduledSession.objects.filter(
+                day=day,
+                start_hour__lt=int(end_hour),
+                end_hour__gt=int(start_hour)
+            ).values_list('room_id', flat=True)
             
-            if day and start_hour and end_hour:
-                # Check if room is occupied during the requested time
-                conflicts = ScheduledSession.objects.filter(
-                    room=room,
-                    day=day,
-                    start_hour__lt=int(end_hour),
-                    end_hour__gt=int(start_hour)
-                )
-                
-                # Also check reservation requests
-                reservation_conflicts = ReservationRequest.objects.filter(
-                    room=room,
-                    day=day,
-                    status='APPROVED',
-                    start_hour__lt=int(end_hour),
-                    end_hour__gt=int(start_hour)
-                )
-                
-                if conflicts.exists() or reservation_conflicts.exists():
-                    is_available = False
+            # Get occupied room IDs from approved reservations (EFFICIENT)
+            occupied_by_reservations = ReservationRequest.objects.filter(
+                day=day,
+                status='APPROVED',
+                start_hour__lt=int(end_hour),
+                end_hour__gt=int(start_hour)
+            ).values_list('room_id', flat=True)
             
-            if is_available:
-                available_rooms.append(room)
+            # Combine both lists of occupied rooms
+            occupied_room_ids = set(occupied_by_sessions) | set(occupied_by_reservations)
+            
+            # Exclude occupied rooms (SINGLE QUERY)
+            available_rooms = rooms.exclude(id__in=occupied_room_ids)
+        else:
+            # No time criteria - just show rooms matching capacity
+            available_rooms = rooms
     
     context = {
         'available_rooms': available_rooms,
         'search_performed': search_performed,
-        'days': ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
-        'hours': range(8, 19),  # 8h to 18h
+        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        'hours': range(8, 19),
     }
     return render(request, 'scheduler/find_rooms.html', context)
+
+
+
+from .models import TeacherUnavailability
+from .forms import TeacherUnavailabilityForm
+
+@login_required
+def manage_unavailability(request):
+    """Teacher can view and manage their unavailability"""
+    # Get teacher's existing unavailabilities
+    unavailabilities = TeacherUnavailability.objects.filter(teacher=request.user).order_by('day', 'start_hour')
+    
+    # Handle form submission
+    if request.method == 'POST':
+        form = TeacherUnavailabilityForm(request.POST)
+        if form.is_valid():
+            unavailability = form.save(commit=False)
+            unavailability.teacher = request.user
+            unavailability.save()
+            messages.success(request, "Unavailability added successfully!")
+            return redirect('manage_unavailability')
+    else:
+        form = TeacherUnavailabilityForm()
+    
+    context = {
+        'form': form,
+        'unavailabilities': unavailabilities,
+    }
+    return render(request, 'scheduler/manage_unavailability.html', context)
+
+@login_required
+def delete_unavailability(request, unavail_id):
+    """Delete an unavailability entry"""
+    unavailability = get_object_or_404(TeacherUnavailability, id=unavail_id, teacher=request.user)
+    
+    if request.method == 'POST':
+        unavailability.delete()
+        messages.success(request, "Unavailability removed!")
+        return redirect('manage_unavailability')
+    
+    return render(request, 'scheduler/confirm_delete_unavailability.html', {'unavailability': unavailability})
+def settings_view(request):
+    user = request.user
+
+    # 1. Initialize BOTH forms with default data first.
+    # This ensures variables always exist, preventing the UnboundLocalError.
+    profile_form = ProfileForm(instance=user)
+    password_form = PasswordChangeForm(user)
+
+    if request.method == 'POST':
+        # --- SCENARIO A: Updating Profile ---
+        if 'update_profile' in request.POST:
+            # Re-initialize profile_form with the submitted data
+            profile_form = ProfileForm(request.POST, request.FILES, instance=user)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, 'Your profile has been updated!')
+                return redirect('settings')
+
+        # --- SCENARIO B: Updating Password ---
+        elif 'change_password' in request.POST:
+            # Re-initialize password_form with the submitted data
+            password_form = PasswordChangeForm(user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                # Important: Keep the user logged in
+                update_session_auth_hash(request, user) 
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('settings')
+            else:
+                messages.error(request, 'Please correct the error below.')
+
+    # 3. Render the template
+    # Since we defined both forms at the very top, this will never crash now!
+    context = {
+        'profile_form': profile_form,
+        'password_form': password_form
+    }
+    return render(request, 'scheduler/settings.html', context)

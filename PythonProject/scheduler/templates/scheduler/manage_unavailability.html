@@ -1,0 +1,177 @@
+{% extends 'scheduler/base.html' %}
+
+{% block content %}
+<style>
+    .unavailability-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        padding: 2rem;
+    }
+
+    .unavail-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 10px;
+        border-left: 4px solid #ef4444;
+        margin-bottom: 0.75rem;
+    }
+
+    .unavail-info {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .unavail-day {
+        font-weight: 700;
+        color: #1e293b;
+        min-width: 100px;
+    }
+
+    .unavail-time {
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-section {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none;
+    }
+
+    .delete-btn {
+        background: transparent;
+        border: 2px solid #ef4444;
+        color: #ef4444;
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .delete-btn:hover {
+        background: #ef4444;
+        color: white;
+    }
+</style>
+
+<div class="container-fluid px-4 py-4">
+    
+    <!-- Header -->
+    <div class="mb-5">
+        <h3 class="fw-bold text-dark mb-1">My Unavailability</h3>
+        <p class="text-muted mb-0">Declare when you're not available for teaching</p>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Add New Unavailability Form -->
+    <div class="unavailability-card mb-4">
+        <h5 class="fw-bold mb-4">
+            <span class="material-symbols-outlined text-danger" style="vertical-align: middle;">event_busy</span>
+            Declare New Unavailability
+        </h5>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-section">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">calendar_today</span>
+                            Day
+                        </label>
+                        {{ form.day }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                            Start Time
+                        </label>
+                        {{ form.start_hour }}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            <span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">schedule</span>
+                            End Time
+                        </label>
+                        {{ form.end_hour }}
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-danger w-100 py-2 fw-bold">
+                <span class="material-symbols-outlined me-2" style="vertical-align: middle; font-size: 20px;">add_circle</span>
+                Add Unavailability
+            </button>
+        </form>
+    </div>
+
+    <!-- Existing Unavailabilities -->
+    <div class="unavailability-card">
+        <h5 class="fw-bold mb-4">My Declared Unavailabilities</h5>
+
+        {% if unavailabilities %}
+            {% for unavail in unavailabilities %}
+            <div class="unavail-item">
+                <div class="unavail-info">
+                    <div class="unavail-day">
+                        <span class="material-symbols-outlined me-2" style="vertical-align: middle; color: #ef4444;">event_busy</span>
+                        {{ unavail.day }}
+                    </div>
+                    <div class="unavail-time">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">schedule</span>
+                        <span>{{ unavail.start_hour }}:00 - {{ unavail.end_hour }}:00</span>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'delete_unavailability' unavail.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="delete-btn">
+                        <span class="material-symbols-outlined me-1" style="font-size: 16px; vertical-align: middle;">delete</span>
+                        Remove
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <span class="material-symbols-outlined text-muted" style="font-size: 64px;">event_available</span>
+                <h5 class="mt-3 text-muted">No Unavailabilities Declared</h5>
+                <p class="text-muted">You're available for all time slots</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

@@ -16,5 +16,7 @@ urlpatterns = [
     path('generate/', views.generate_timetable, name='generate'),
     path('teachers/edit/<int:teacher_id>/', views.edit_teacher, name='edit_teacher'),
     path('teachers/delete/<int:teacher_id>/', views.delete_teacher, name='delete_teacher'),
+    path('settings/', views.settings_view, name='settings'),
+    
    
 ]

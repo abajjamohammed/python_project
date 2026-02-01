@@ -1,0 +1,184 @@
+{% extends 'scheduler/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4 fw-bold text-dark">Account Settings</h2>
+
+    <!-- Display Messages (Success/Error) -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- LEFT COLUMN: Profile Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow border-0 text-center p-4">
+                <div class="mb-3">
+                    <!-- LOGIC: Check if user has a picture -->
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" 
+                             alt="Profile" 
+                             class="rounded-circle shadow" 
+                             style="width: 120px; height: 120px; object-fit: cover; border: 4px solid white;">
+                    {% else %}
+                        <!-- Fallback: Initials if no picture -->
+                        <div class="d-inline-flex justify-content-center align-items-center rounded-circle bg-primary text-white mx-auto shadow" 
+                             style="width: 120px; height: 120px; font-size: 2.5rem; font-weight: bold; border: 4px solid white;">
+                            {{ user.username.0|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <h4 class="fw-bold">{{ user.first_name }} {{ user.last_name }}</h4>
+                <p class="text-muted">@{{ user.username }}</p>
+                
+                <span class="badge bg-secondary rounded-pill px-3 py-2">
+                    User Role: {{ user.role }}
+                </span>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Settings Tabs -->
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-white">
+                    <ul class="nav nav-tabs card-header-tabs" id="settingsTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button">Edit Profile</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button">Security</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="appearance-tab" data-bs-toggle="tab" data-bs-target="#appearance" type="button">Appearance</button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="card-body">
+                    <div class="tab-content">
+                        
+                        <!-- TAB 1: Edit Profile -->
+                        <div class="tab-pane fade show active" id="profile" role="tabpanel">
+                            <!-- IMPORTANT: enctype="multipart/form-data" is needed for file uploads -->
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Profile Picture</label>
+                                    {{ profile_form.profile_picture }}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">First Name</label>
+                                    {{ profile_form.first_name }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Last Name</label>
+                                    {{ profile_form.last_name }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Email Address</label>
+                                    {{ profile_form.email }}
+                                </div>
+
+                                <button type="submit" name="update_profile" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Changes
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- TAB 2: Security (Password) -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <div class="alert alert-light border">
+                                <i class="fas fa-lock text-warning"></i> Please enter your new password below.
+                            </div>
+                            
+                            <form method="post">
+                                {% csrf_token %}
+                                {{ password_form.as_p }}
+                                <button type="submit" name="change_password" class="btn btn-danger">
+                                    Update Password
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- TAB 3: Appearance (Dark Mode) -->
+                        <div class="tab-pane fade" id="appearance" role="tabpanel">
+                            <h5 class="mb-3">Theme Preferences</h5>
+                            <div class="d-flex justify-content-between align-items-center border p-3 rounded bg-light">
+                                <div>
+                                    <strong><i class="fas fa-moon"></i> Dark Mode</strong>
+                                    <p class="text-muted small mb-0">Switch between light and dark themes.</p>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="darkModeSwitch" style="width: 3em; height: 1.5em; cursor: pointer;">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dark Mode Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const toggleSwitch = document.getElementById('darkModeSwitch');
+        const body = document.body;
+        
+        // Check saved preference
+        if(localStorage.getItem('theme') === 'dark') {
+            body.classList.add('bg-dark', 'text-white');
+            if(toggleSwitch) toggleSwitch.checked = true;
+            fixDarkCards();
+        }
+
+        if(toggleSwitch) {
+            toggleSwitch.addEventListener('change', function() {
+                if(this.checked) {
+                    body.classList.add('bg-dark', 'text-white');
+                    fixDarkCards();
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    body.classList.remove('bg-dark', 'text-white');
+                    resetCards();
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        }
+
+        function fixDarkCards() {
+            document.querySelectorAll('.card').forEach(c => {
+                c.classList.remove('bg-white');
+                c.classList.add('bg-secondary', 'text-white');
+            });
+            document.querySelectorAll('.card-header').forEach(c => {
+                c.classList.remove('bg-white');
+                c.classList.add('bg-dark', 'text-white');
+            });
+        }
+
+        function resetCards() {
+            document.querySelectorAll('.card').forEach(c => {
+                c.classList.add('bg-white');
+                c.classList.remove('bg-secondary', 'text-white');
+            });
+            document.querySelectorAll('.card-header').forEach(c => {
+                c.classList.add('bg-white');
+                c.classList.remove('bg-dark', 'text-white');
+            });
+        }
+    });
+</script>
+{% endblock %}

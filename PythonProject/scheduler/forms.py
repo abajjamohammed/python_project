@@ -1,6 +1,5 @@
 from django import forms
-
-# ⚠️ UPDATE THIS LINE: Import both ReservationRequest AND Course
+from .models import TeacherUnavailability
 from .models import ReservationRequest, Course, ScheduledSession,  User, Course, Room
 
 # --- Your Friend's Code (Leave this alone) ---
@@ -98,4 +97,38 @@ class TeacherEditForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+
+
+
+class TeacherUnavailabilityForm(forms.ModelForm):
+    class Meta:
+        model = TeacherUnavailability
+        fields = ['day', 'start_hour', 'end_hour']
+        widgets = {
+            'day': forms.Select(choices=[
+                ('Lundi', 'Monday'),
+                ('Mardi', 'Tuesday'),
+                ('Mercredi', 'Wednesday'),
+                ('Jeudi', 'Thursday'),
+                ('Vendredi', 'Friday'),
+            ], attrs={'class': 'form-select'}),
+            'start_hour': forms.Select(choices=[(h, f'{h}:00') for h in range(8, 19)], attrs={'class': 'form-select'}),
+            'end_hour': forms.Select(choices=[(h, f'{h}:00') for h in range(8, 19)], attrs={'class': 'form-select'}),
+        }
+        labels = {
+            'day': 'Day',
+            'start_hour': 'Start Time',
+            'end_hour': 'End Time',
+        }
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'profile_picture'] 
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            # File Input Styling
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
         }
