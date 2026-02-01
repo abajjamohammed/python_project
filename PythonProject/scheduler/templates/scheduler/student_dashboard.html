@@ -10,20 +10,28 @@
     <div class="row">
         <div class="col-md-8">
             <h5 class="fw-bold mb-3">Today's Live View</h5>
-            <div class="row mb-5">
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm p-3 border-start border-primary border-4">
-                        <span class="text-primary small fw-bold">IN PROGRESS</span>
-                        <h4 class="mt-2 mb-1">{{ next_class.course.name|default:"No Class Now" }}</h4>
-                        <p class="text-muted small">Prof. {{ next_class.course.teacher.username }}</p>
-                        <div class="d-flex gap-3 text-muted small mt-3">
-                            <span><i class="far fa-clock"></i> {{ next_class.start_hour }}:00 - {{ next_class.end_hour }}:00</span>
-                            <span><i class="fas fa-map-marker-alt"></i> Room {{ next_class.room.name }}</span>
+            
+            <div class="card border-0 shadow-sm mb-5 text-white" 
+                 style="background: linear-gradient(45deg, #1a237e, #0d47a1); border-radius: 15px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-white text-primary mb-2">NEXT UP</span>
+                            <h2 class="fw-bold mb-1">{{ next_class.course.name}}</h2>
+                            <p class="mb-0 opacity-75">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>Prof. {{ next_class.course.teacher.username|default:"N/A" }}
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <h3 class="fw-bold mb-0">{% if next_class %}{{ next_class.start_hour }}:00{% else %}--:--{% endif %}</h3>
+                            <div class="badge bg-light bg-opacity-25 mt-2">
+                                <i class="fas fa-map-marker-alt me-1"></i> Room {{ next_class.room.name|default:"-" }}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!--Time table part-->
+
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold">Time-Table</h5>
@@ -43,14 +51,13 @@
                                 <tr>
                                     <td class="align-middle fw-bold text-muted small py-4">{{ hour }}:00</td>
                                     {% for day in days %}
-                                    <td class="p-2" style="width: 18%; min-height: 80px; background-color: #fafafa;">
+                                    <td class="p-2" style="width: 18%; background-color: #fafafa;">
                                         {% for session in sessions %}
                                             {% if session.day == day and session.start_hour == hour %}                                                
                                                 <div class="p-2 rounded shadow-sm text-start" 
                                                     style="background-color: #e7f0ff; border-left: 4px solid #0d6efd;">
                                                     <div class="fw-bold small text-primary">{{ session.course.name }}</div>
                                                     <div class="extra-small text-muted">Room {{ session.room.name }}</div>
-                                                    <div class="extra-small fw-bold mt-1" style="font-size: 0.65rem;">GROUP: {{ student_group }}</div>
                                                 </div>
                                             {% endif %}
                                         {% endfor %}
@@ -66,37 +73,63 @@
         </div>
 
         <div class="col-md-4">
+            
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-0 py-3">
-                    <h6 class="fw-bold mb-0"><i class="fas fa-bolt text-danger"></i> Real-time Updates</h6>
+                    <h6 class="fw-bold mb-0">Semester Summary</h6>
                 </div>
                 <div class="card-body">
-                    <div class="update-item mb-3 p-2 bg-light rounded">
-                        <small class="text-danger fw-bold">Room Change</small>
-                        <p class="mb-0 small">Math moved to Room 102</p>
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                            <i class="fas fa-book-open text-primary"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">{{ course_count }} Courses</div>
+                            <small class="text-muted">Currently Enrolled</small>
+                        </div>
                     </div>
-                    <div class="update-item p-2 bg-light rounded">
-                        <small class="text-success fw-bold">New Material</small>
-                        <p class="mb-0 small">Python Lecture Notes uploaded</p>
+                    
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                            <i class="fas fa-award text-success"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">G1 Group</div>
+                            <small class="text-muted">Assigned Group</small>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card border-0 bg-primary text-white shadow-sm">
+            <div class="card border-0 shadow-sm" style="background-color: #ffffff;">
                 <div class="card-body">
-                    <h6 class="small uppercase opacity-75">Attendance Rate</h6>
-                    <h2 class="fw-bold">94%</h2>
-                    <div class="progress bg-white bg-opacity-25 mt-3" style="height: 8px;">
-                        <div class="progress-bar bg-white" style="width: 94%"></div>
-                    </div>
+                    <h6 class="fw-bold text-dark mb-3">Quick Links</h6>
+                    <a href="{% url 'student_timetable' %}" class="btn btn-outline-primary w-100 mb-2 text-start">
+                        <i class="fas fa-print me-2"></i> Print Full PDF
+                    </a>
+                    <a href="{% url 'student_classes' %}" class="btn btn-outline-secondary w-100 text-start">
+                        <i class="fas fa-graduation-cap me-2"></i> My Courses
+                    </a>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 
 <style>
     .extra-small { font-size: 0.75rem; }
-    .uppercase { text-transform: uppercase; letter-spacing: 1px; }
+    /* Forces the gridlines to appear clearly */
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #dee2e6 !important; /* Standard Bootstrap gray line */
+    }
+
+    /* Makes the Time column stand out slightly */
+    .table td:first-child {
+        background-color: #f8f9fa;
+        border-right: 2px solid #dee2e6 !important;
+    }
+    
 </style>
 {% endblock %}

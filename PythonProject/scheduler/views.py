@@ -365,19 +365,49 @@ def teacher_dashboard(request):
 
 #Added by Adjii:
 def student_dashboard(request):
-    # Filter for Mohammed's group
-    sessions = ScheduledSession.objects.filter(course__group_name=request.user.student_group)
+    # 1. Get student info and basic counts
+    student_group = request.user.student_group
+    sessions = ScheduledSession.objects.filter(course__group_name=student_group)
+    course_count = Course.objects.filter(group_name=student_group).count()
     
+    # 2. Time-Table display settings
+    day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    
+    # 3. SMART "NEXT UP" LOGIC
+    now = datetime.now()
+    current_day = now.strftime("%A")
+    current_hour = now.hour
+    next_class = None
+
+    if sessions.exists():
+        # A. Look for classes left TODAY
+        today_remaining = sessions.filter(day=current_day, start_hour__gt=current_hour).order_by('start_hour')
+        
+        if today_remaining.exists():
+            next_class = today_remaining.first()
+        else:
+            # B. Look for classes later this week
+            current_day_index = day_order.index(current_day) if current_day in day_order else -1
+            later_this_week = sessions.exclude(day=current_day).filter(
+                day__in=day_order[current_day_index + 1:]
+            )
+            
+            if later_this_week.exists():
+                next_class = sorted(list(later_this_week), key=lambda x: (day_order.index(x.day), x.start_hour))[0]
+            else:
+                # C. LOOP BACK: Monday morning
+                next_class = sorted(list(sessions), key=lambda x: (day_order.index(x.day), x.start_hour))[0]
+
     # Context for the dashboard
     context = {
         'sessions': sessions,
-        'next_class': sessions.first(),
-        'student_group': request.user.student_group,
-        'days': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        'hours': [9, 10, 11, 12,13, 14, 15, 16,17,18], # These must be integers to match session.start_hour
+        'course_count': course_count, # Correctly displays 4 courses
+        'next_class': next_class,     # Looping spotlight
+        'student_group': student_group,
+        'days': day_order,
+        'hours': [9, 10, 11, 12, 13, 14, 15, 16], # Compacted to match reference
     }
     return render(request, 'scheduler/student_dashboard.html', context)
-
 
 #Adjii added this for the generate schedule button
 @login_required
@@ -654,3 +684,39 @@ def settings_view(request):
         'password_form': password_form
     }
     return render(request, 'scheduler/settings.html', context)
+
+from datetime import datetime
+
+def get_next_spotlight_session(student_group):
+    # 1. Define day order to handle sorting
+    day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    
+    # 2. Get current time and day
+    now = datetime.now()
+    current_day = now.strftime("%A")
+    current_hour = now.hour
+
+    # 3. Get all sessions for this student
+    all_sessions = ScheduledSession.objects.filter(course__group_name=student_group)
+    
+    if not all_sessions.exists():
+        return None
+
+    # 4. Filter for sessions LATER today
+    today_remaining = all_sessions.filter(day=current_day, start_hour__gt=current_hour).order_by('start_hour')
+    
+    if today_remaining.exists():
+        return today_remaining.first()
+
+    # 5. Filter for sessions LATER this week
+    current_day_index = day_order.index(current_day) if current_day in day_order else -1
+    later_this_week = all_sessions.exclude(day=current_day).filter(
+        day__in=day_order[current_day_index + 1:]
+    )
+    
+    # Sort these by day index then hour
+    if later_this_week.exists():
+        return sorted(list(later_this_week), key=lambda x: (day_order.index(x.day), x.start_hour))[0]
+
+    # 6. LOOP BACK: If nothing is left this week, get the very first session on Monday
+    return sorted(list(all_sessions), key=lambda x: (day_order.index(x.day), x.start_hour))[0]

@@ -299,13 +299,13 @@
                 <div class="nav-header">Student Area</div>
                 <a href="{% url 'student_classes' %}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
-                    My Classes
+                    My Courses
                 </a>
                 <br>
                 <a href="{% url 'student_timetable' %}" class="nav-link ">
                      <i class="fas fa-calendar-alt me-2"></i> My Time-Table
                 </a>
-
+                <br>
                   <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
                     <span class="material-symbols-outlined">meeting_room</span>
                     Find Rooms
