@@ -12,7 +12,7 @@ import csv
 from datetime import datetime
 from .forms import SessionForm
 from django.shortcuts import redirect
-from django.shortcuts import render, redirect, get_object_or_404
+
 from .forms import TeacherForm, TeacherEditForm # Import the new form
 from .models import TeacherUnavailability
 from .forms import TeacherUnavailabilityForm
@@ -20,6 +20,11 @@ from .forms import ProfileForm
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
+# --- Make sure this import is at the very top of the file! ---
+from .models import Course  
+
+
+from .forms import CourseForm  # <--- Make sure this is here
 
 
 
@@ -195,7 +200,7 @@ def add_course(request):
         form = CourseForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('dashboard') # Go back to dashboard after saving
+            return redirect('course_list') # Go back to dashboard after saving
     else:
         form = CourseForm()
     
@@ -702,3 +707,39 @@ def settings_view(request):
         'password_form': password_form
     }
     return render(request, 'scheduler/settings.html', context)
+
+
+# --- Paste this function at the bottom ---
+def course_list(request):
+    # Fetch all courses
+    courses = Course.objects.all()
+    return render(request, 'scheduler/course_list.html', {'courses': courses})
+# --- EDIT COURSE ---
+# --- EDIT COURSE ---
+# --- EDIT COURSE ---
+def edit_course(request, course_id):
+    # Find the course by ID
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        # Load the form with the existing course data (instance=course)
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            return redirect('course_list')
+    else:
+        # Pre-fill the form
+        form = CourseForm(instance=course)
+    
+    # Reuse the add_course template but with data filled in
+    return render(request, 'scheduler/add_course.html', {'form': form, 'is_edit': True})
+
+# --- DELETE COURSE ---
+def delete_course(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        course.delete()
+        return redirect('course_list')
+    
+    return render(request, 'scheduler/confirm_delete_course.html', {'course': course})

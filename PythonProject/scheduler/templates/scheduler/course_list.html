@@ -1,0 +1,101 @@
+{% extends 'scheduler/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Header with "Add" Button -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Academic Courses</h2>
+            <p class="text-muted small">Manage subjects, teachers, and student groups.</p>
+        </div>
+        <a href="{% url 'add_course' %}" class="btn btn-primary shadow-sm px-4">
+            <i class="fas fa-plus-circle me-2"></i> Add New Course
+        </a>
+    </div>
+
+    <!-- Course Grid -->
+    <div class="row">
+        {% for course in courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 h-100 position-relative" style="transition: transform 0.2s;">
+                <!-- Decorative Left Border -->
+                <div class="position-absolute start-0 top-0 bottom-0 bg-info rounded-start" style="width: 5px;"></div>
+                
+                <div class="card-body ps-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="fw-bold text-dark mb-0">{{ course.name }}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                               <li>
+        <a class="dropdown-item" href="{% url 'edit_course' course.id %}">
+            <i class="fas fa-edit me-2 text-primary"></i> Edit
+        </a>
+    </li>
+    
+    <!-- DELETE BUTTON -->
+    <li>
+        <a class="dropdown-item text-danger" href="{% url 'delete_course' course.id %}">
+            <i class="fas fa-trash me-2"></i> Delete
+        </a>
+    </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar bg-light text-primary rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 32px; height: 32px; font-weight: bold;">
+                            {{ course.teacher.username.0|upper }}
+                        </div>
+                        <span class="text-muted small">Prof. {{ course.teacher.username }}</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <span class="badge bg-soft-primary text-primary border border-primary-subtle">
+                            <i class="fas fa-users me-1"></i> Group {{ course.group_name }}
+                        </span>
+                        <span class="text-muted small">
+                            <i class="fas fa-chair me-1"></i> {{ course.student_count }} Students
+                        </span>
+                    </div>
+                    
+                    {% if course.equipment_needed %}
+                    <div class="mt-2">
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            <i class="fas fa-tools"></i> Needs: {{ course.equipment_needed }}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <!-- Empty State (If no courses exist) -->
+        <div class="col-12 text-center py-5">
+            <div class="mb-3">
+                <i class="fas fa-book-open text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+            </div>
+            <h4 class="text-muted">No courses found yet.</h4>
+            <p class="text-muted">Click the button above to create your first course.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Hover Effect for Cards -->
+<style>
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .bg-soft-primary {
+        background-color: #e3f2fd;
+    }
+</style>
+{% endblock %}
+
+
+

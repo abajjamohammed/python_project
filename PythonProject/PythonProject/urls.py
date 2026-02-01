@@ -59,6 +59,14 @@ urlpatterns = [
     path('export/csv/', views.export_timetable_csv, name='export_timetable_csv'),
     path('timetable/print/', views.student_timetable, name='student_timetable'),
      path('session/add/', views.add_session, name='add_session'),
+     path('courses/', views.course_list, name='course_list'),
+
+
+    # --- ADD THESE MISSING LINES ---
+    path('courses/edit/<int:course_id>/', views.edit_course, name='edit_course'),
+    path('courses/delete/<int:course_id>/', views.delete_course, name='delete_course'),
+    
+
 ]
 # ... your existing urlpatterns ...
 

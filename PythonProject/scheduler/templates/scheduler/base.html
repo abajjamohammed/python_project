@@ -236,10 +236,13 @@
                     Users (Teachers)
                 </a>
 
-                <a href="{% url 'add_course' %}" class="nav-link {% if 'course' in request.path %}active{% endif %}">
-                    <span class="material-symbols-outlined">library_books</span>
-                    Courses
-                </a>
+               <!-- Courses Link -->
+<li class="nav-item">
+    <!-- Changed from 'add_course' to 'course_list' -->
+    <a href="{% url 'course_list' %}" class="nav-link">
+        <i class="fas fa-book me-2"></i> Courses
+    </a>
+</li>
                 
                 <a href="{% url 'approve_reservations' %}" class="nav-link {% if 'reservations' in request.path %}active{% endif %}">
                     <span class="material-symbols-outlined">fact_check</span>
@@ -299,13 +302,13 @@
                 <div class="nav-header">Student Area</div>
                 <a href="{% url 'student_classes' %}" class="nav-link">
                     <span class="material-symbols-outlined">school</span>
-                    My Classes
+                    My Courses
                 </a>
                 <br>
                 <a href="{% url 'student_timetable' %}" class="nav-link ">
                      <i class="fas fa-calendar-alt me-2"></i> My Time-Table
                 </a>
-
+                <br>
                   <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
                     <span class="material-symbols-outlined">meeting_room</span>
                     Find Rooms
