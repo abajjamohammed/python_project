@@ -1,0 +1,156 @@
+{% extends 'scheduler/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-lg">
+        <div class="card-body text-center py-5">
+            <div class="spinner-border text-primary mb-4" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <h4 class="mb-3">Préparation du PDF</h4>
+            <p class="text-muted mb-4">Votre emploi du temps est en cours de génération...</p>
+            
+            <div class="progress mb-4" style="height: 10px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     id="progressBar" style="width: 0%"></div>
+            </div>
+            
+            <p id="statusMessage" class="small text-muted">Initialisation...</p>
+            
+            <div class="mt-4">
+                <button onclick="startPDFGeneration()" class="btn btn-primary" id="generateBtn">
+                    <i class="fas fa-file-pdf me-2"></i> Générer le PDF
+                </button>
+                <a href="{% url 'timetable' %}" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-times me-2"></i> Annuler
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    function startPDFGeneration() {
+        document.getElementById('generateBtn').disabled = true;
+        updateProgress(10, 'Capture du tableau...');
+        
+        // Get the timetable element
+        const timetableElement = document.querySelector('.timetable-card') || 
+                                document.querySelector('table');
+        
+        if (!timetableElement) {
+            updateProgress(0, 'Erreur: Tableau non trouvé');
+            alert('Impossible de trouver le tableau. Veuillez réessayer.');
+            return;
+        }
+        
+        // Clone the element to avoid affecting the page
+        const clone = timetableElement.cloneNode(true);
+        
+        // Hide buttons and UI elements in the clone
+        const elementsToHide = clone.querySelectorAll('.no-print, .btn, .dropdown');
+        elementsToHide.forEach(el => el.style.display = 'none');
+        
+        // Create a container for the capture
+        const container = document.createElement('div');
+        container.style.cssText = `
+            position: fixed;
+            top: -10000px;
+            left: -10000px;
+            width: 1200px;
+            background: white;
+            padding: 20px;
+            z-index: 99999;
+        `;
+        
+        // Add title
+        const title = document.createElement('div');
+        title.style.cssText = `
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        `;
+        title.innerHTML = `
+            <h2 style="margin: 0 0 10px 0; font-size: 24px;">EMPLOI DU TEMPS UNIVERSITAIRE</h2>
+            <p style="margin: 0; opacity: 0.9;">
+                Généré le: ${new Date().toLocaleDateString('fr-FR')} | 
+                Par: {{ user.username }}
+            </p>
+        `;
+        
+        container.appendChild(title);
+        container.appendChild(clone);
+        document.body.appendChild(container);
+        
+        updateProgress(30, 'Génération de l\'image...');
+        
+        // Capture as image
+        html2canvas(container, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            logging: false,
+            useCORS: true
+        }).then(canvas => {
+            updateProgress(70, 'Création du PDF...');
+            
+            // Remove the temporary container
+            document.body.removeChild(container);
+            
+            // Convert to PDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            // Calculate dimensions
+            const imgWidth = 280; // A4 width in mm (landscape)
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            // Add image to PDF
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            
+            // Add footer
+            pdf.setFontSize(10);
+            pdf.setTextColor(128);
+            pdf.text('Système AlphaGo - Gestion d\'Emploi du Temps', 145, 200);
+            
+            updateProgress(100, 'Téléchargement...');
+            
+            // Save PDF
+            const timestamp = new Date().toISOString().split('T')[0];
+            pdf.save(`emploi_du_temps_${timestamp}.pdf`);
+            
+            // Redirect back after a delay
+            setTimeout(() => {
+                window.location.href = "{% url 'timetable' %}";
+            }, 2000);
+            
+        }).catch(error => {
+            console.error('Error:', error);
+            updateProgress(0, 'Erreur lors de la génération');
+            alert('Une erreur est survenue: ' + error.message);
+            document.getElementById('generateBtn').disabled = false;
+        });
+    }
+    
+    function updateProgress(percent, message) {
+        document.getElementById('progressBar').style.width = percent + '%';
+        document.getElementById('statusMessage').textContent = message;
+    }
+    
+    // Auto-start if parameter is set
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('auto') === 'true') {
+        setTimeout(startPDFGeneration, 1000);
+    }
+</script>
+{% endblock %}
