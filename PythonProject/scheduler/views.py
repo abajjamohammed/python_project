@@ -518,7 +518,7 @@ def teacher_dashboard(request):
     }
     return render(request, 'scheduler/teacher_dashboard.html', context)
 
-#Added by Adjii:
+
 @login_required
 def student_dashboard(request):
     # 1. Setup the basic grid variables
@@ -535,35 +535,47 @@ def student_dashboard(request):
             'error_message': 'No group assigned.'
         })
 
-    # 3. DEFINE SESSIONS FIRST (This fixes the NameError)
+    # 3. DEFINE SESSIONS
     sessions = ScheduledSession.objects.filter(
         Q(course__group=student_group) | 
         Q(course__filiere=student_group.filiere, course__session_type='CM')
     ).select_related('course', 'room', 'course__teacher')
 
-    # 4. Weekend / Next Up Logic
+    # 4. Improved Next Up Logic
     now = timezone.localtime()
     today_name = now.strftime('%A')
     current_hour = now.hour
     
-    search_day = today_name
     status_label = "NEXT UP"
+    next_class = None
 
-    if today_name == "Sunday":
-        search_day = "Monday"
-        status_label = "MONDAY MORNING"
-        # Find first class of Monday
-        next_class = sessions.filter(day=search_day).order_by('start_hour').first()
-    else:
-        # Find next class for today
+    # Try to find a class remaining today
+    if today_name != "Sunday":
         next_class = sessions.filter(day=today_name, end_hour__gt=current_hour).order_by('start_hour').first()
+
+    # If no more classes today (or it's Sunday), look for the next available day
+    if not next_class:
+        # Create an ordered list of days starting from tomorrow
+        if today_name in days:
+            start_index = days.index(today_name) + 1
+        else: # Sunday case
+            start_index = 0
+            
+        # Circular shift: tomorrow until the end of the week, then start of the week
+        upcoming_days = days[start_index:] + days[:start_index]
+
+        for day in upcoming_days:
+            next_class = sessions.filter(day=day).order_by('start_hour').first()
+            if next_class:
+                status_label = f"COMING UP {day.upper()}"
+                break
 
     # 5. Send everything to the template
     context = {
         'student_group': student_group,
         'sessions': sessions,
         'next_class': next_class,
-        'status_label': status_label, # Use this in your HTML badge
+        'status_label': status_label, 
         'days': days,
         'hours': hours,
         'today_name': today_name,
