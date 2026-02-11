@@ -216,7 +216,7 @@
         <div class="d-flex flex-column h-100">
             
             <!-- Global Link -->
-            <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+            <a href="{% url 'dashboard' %}" class="nav-link">
                 <span class="material-symbols-outlined">dashboard</span>
                 Dashboard
             </a>
@@ -226,36 +226,36 @@
                 <div class="nav-header">Management</div>
                 
                 <!-- Here are the pages you thought were missing! -->
-                <a href="{% url 'timetable' %}" class="nav-link {% if 'timetable' in request.path %}active{% endif %}">
+                <a href="{% url 'timetable' %}" class="nav-link">
                     <span class="material-symbols-outlined">calendar_month</span>
                     Schedules
                 </a>
 
-                <a href="{% url 'teacher_list' %}" class="nav-link {% if 'teachers' in request.path %}active{% endif %}">
+                <a href="{% url 'teacher_list' %}" class="nav-link">
                     <span class="material-symbols-outlined">group</span>
                     Users (Teachers)
                 </a>
 
-               <!-- Courses Link -->
-<li class="nav-item">
-    <!-- Changed from 'add_course' to 'course_list' -->
-    <a href="{% url 'course_list' %}" class="nav-link">
-        <i class="fas fa-book me-2"></i> Courses
-    </a>
-</li>
+                               <!-- Courses Link -->
+                <li class="nav-item">
+                    <!-- Changed from 'add_course' to 'course_list' -->
+                    <a href="{% url 'course_list' %}" class="nav-link">
+                        <i class="fas fa-book me-2"></i> Courses
+                    </a>
+                </li>
                 
-                <a href="{% url 'approve_reservations' %}" class="nav-link {% if 'reservations' in request.path %}active{% endif %}">
+                <a href="{% url 'approve_reservations' %}" class="nav-link">
                     <span class="material-symbols-outlined">fact_check</span>
                     Requests
                 </a>
                 
                 <div class="nav-header">System</div>
-                <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
+                <a href="{% url 'find_rooms' %}" class="nav-link">
                     <span class="material-symbols-outlined">meeting_room</span>
                     Rooms
                 </a>
                 <li class="nav-item mt-auto">
-                    <a href="{% url 'settings' %}" class="nav-link">
+                    <a href="{% url 'settings' %}"class="nav-link">
                         <i class="fas fa-cog me-2"></i> Settings
                     </a>
                 </li>
@@ -265,24 +265,24 @@
             {% if request.user.role == 'T' %}
                 <div class="nav-header">MAIN MENU</div>
 
-               <a href="{% url 'teacher_timetable' %}" class="nav-link {% if 'timetable' in request.path %}active{% endif %}">
+               <a href="{% url 'teacher_timetable' %}" class="nav-link">
                     <span class="material-symbols-outlined">calendar_month</span>
                     My Schedule
                 </a>
             
-               <a href="{% url 'make_reservation' %}" class="nav-link {% if 'reservation/new' in request.path %}active{% endif %}">
+               <a href="{% url 'make_reservation' %}" class="nav-link">
                     <span class="material-symbols-outlined">add_circle</span>
                     Request Room
                 </a>
             
-               <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
+               <a href="{% url 'find_rooms' %}" class="nav-link">
                     <span class="material-symbols-outlined">meeting_room</span>
                     Find Rooms
                 </a>
             
                 <div class="nav-header">My Requests</div>
 
-             <a href="{% url 'my_reservations' %}" class="nav-link {% if 'reservations/mine' in request.path %}active{% endif %}">
+             <a href="{% url 'my_reservations' %}" class="nav-link">
                 <span class="material-symbols-outlined">pending_actions</span>
                 My Reservations
                 {% if pending_requests_count > 0 %}
@@ -290,7 +290,7 @@
                 {% endif %}
             </a>
             
-            <a href="{% url 'manage_unavailability' %}" class="nav-link {% if 'unavailability' in request.path %}active{% endif %}">
+            <a href="{% url 'manage_unavailability' %}" class="nav-link">
                 <span class="material-symbols-outlined">event_busy</span>
                 My Unavailability
             </a>
@@ -314,12 +314,12 @@
                      <i class="fas fa-calendar-alt me-2"></i> My Time-Table
                 </a>
                 <br>
-                  <a href="{% url 'find_rooms' %}" class="nav-link {% if 'find' in request.path %}active{% endif %}">
+                  <a href="{% url 'find_rooms' %}" class="nav-link ">
                     <span class="material-symbols-outlined">meeting_room</span>
                     Find Rooms
                 </a>
 
-                <a href="{% url 'settings' %}" class="nav-link">
+                <a href="{% url 'settings' %}" class="nav-link" >
                   <i class="fas fa-cog me-2"></i> Settings
                 </a>
                 
