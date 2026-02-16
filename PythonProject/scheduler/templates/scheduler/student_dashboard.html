@@ -15,20 +15,37 @@
                  style="background: linear-gradient(45deg, #1a237e, #0d47a1); border-radius: 15px;">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge bg-white text-primary mb-2">NEXT UP</span>
-                            <h2 class="fw-bold mb-1">{{ next_class.course.name}}</h2>
-                            <p class="mb-0 opacity-75">
-                                <i class="fas fa-chalkboard-teacher me-2"></i>Prof. {{ next_class.course.teacher.username|default:"N/A" }}
-                            </p>
-                        </div>
-                        <div class="text-end">
-                            <h3 class="fw-bold mb-0">{% if next_class %}{{ next_class.start_hour }}:00{% else %}--:--{% endif %}</h3>
-                            <div class="badge bg-light bg-opacity-25 mt-2">
-                                <i class="fas fa-map-marker-alt me-1"></i> Room {{ next_class.room.name|default:"-" }}
-                            </div>
-                        </div>
-                    </div>
+    <div>
+        <span class="badge bg-white text-primary mb-2">
+            {% if next_class %}{{ status_label }}{% else %}COMPLETED{% endif %}
+        </span>
+        
+        <h2 class="fw-bold mb-1">
+            {% if next_class %}{{ next_class.course.name }}{% else %}No Upcoming Classes{% endif %}
+        </h2>
+        
+        <p class="mb-0 opacity-75">
+            <i class="fas fa-chalkboard-teacher me-2"></i>
+            {% if next_class %}
+                Prof. {{ next_class.course.teacher.get_full_name|default:next_class.course.teacher.username }}
+            {% else %}
+                See you soon!
+            {% endif %}
+        </p>
+    </div>
+    
+    <div class="text-end">
+        <h3 class="fw-bold mb-0">
+            {% if next_class %}{{ next_class.start_hour }}:00{% else %}--:--{% endif %}
+        </h3>
+        
+        {% if next_class %}
+        <div class="badge bg-light bg-opacity-25 mt-2">
+            <i class="fas fa-map-marker-alt me-1"></i> Room {{ next_class.room.name|default:"-" }}
+        </div>
+        {% endif %}
+    </div>
+</div>
                 </div>
             </div>
 

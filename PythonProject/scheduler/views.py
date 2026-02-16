@@ -504,26 +504,44 @@ def student_dashboard(request):
             'error_message': 'No group assigned.'
         })
 
-    # Get sessions
+    # Get sessions (Both TD/TP for the group and CM for the whole filiere)
     sessions = ScheduledSession.objects.filter(
         Q(course__group=student_group) | 
         Q(course__filiere=student_group.filiere, course__session_type='CM')
     ).select_related('course', 'room', 'course__teacher')
 
-    # Weekend / Next Up Logic
+    # --- ENHANCED NEXT CLASS LOGIC ---
     now = timezone.localtime()
     today_name = now.strftime('%A')
     current_hour = now.hour
     
-    search_day = today_name
+    # We create an ordered list starting from Today
+    day_sequence = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    # If it's Sunday, we want to start looking from Monday
+    if today_name in day_sequence:
+        start_index = day_sequence.index(today_name)
+        # Reorder list so it starts with today (e.g., [Mon, Tue, Wed...] or [Wed, Thu, Fri... Mon, Tue])
+        ordered_days = day_sequence[start_index:] + day_sequence[:start_index]
+    else:
+        ordered_days = day_sequence # It's Sunday, look from Monday onwards
+
+    next_class = None
     status_label = "NEXT UP"
 
-    if today_name == "Sunday":
-        search_day = "Monday"
-        status_label = "MONDAY MORNING"
-        next_class = sessions.filter(day=search_day).order_by('start_hour').first()
-    else:
-        next_class = sessions.filter(day=today_name, end_hour__gt=current_hour).order_by('start_hour').first()
+    for day in ordered_days:
+        if day == today_name:
+            # If checking today, only look for classes that haven't ended yet
+            found = sessions.filter(day=day, end_hour__gt=current_hour).order_by('start_hour').first()
+        else:
+            # If checking a future day, just take the first class of that day
+            found = sessions.filter(day=day).order_by('start_hour').first()
+        
+        if found:
+            next_class = found
+            # Update label if the class is not today
+            if day != today_name:
+                status_label = f"NEXT CLASS: {day.upper()}"
+            break
 
     context = {
         'student_group': student_group,
@@ -536,7 +554,6 @@ def student_dashboard(request):
         'course_count': sessions.values('course').distinct().count(),
     }
     return render(request, 'scheduler/student_dashboard.html', context)
-
 
 @login_required
 def export_timetable_csv(request):
