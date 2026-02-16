@@ -509,7 +509,9 @@ def student_dashboard(request):
         Q(course__group=student_group) | 
         Q(course__filiere=student_group.filiere, course__session_type='CM')
     ).select_related('course', 'room', 'course__teacher')
-
+    for session in sessions:
+    # Calculate how many hours the session lasts
+        session.duration = session.end_hour - session.start_hour
     # --- ENHANCED NEXT CLASS LOGIC ---
     now = timezone.localtime()
     today_name = now.strftime('%A')

@@ -15,37 +15,37 @@
                  style="background: linear-gradient(45deg, #1a237e, #0d47a1); border-radius: 15px;">
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
-    <div>
-        <span class="badge bg-white text-primary mb-2">
-            {% if next_class %}{{ status_label }}{% else %}COMPLETED{% endif %}
-        </span>
-        
-        <h2 class="fw-bold mb-1">
-            {% if next_class %}{{ next_class.course.name }}{% else %}No Upcoming Classes{% endif %}
-        </h2>
-        
-        <p class="mb-0 opacity-75">
-            <i class="fas fa-chalkboard-teacher me-2"></i>
-            {% if next_class %}
-                Prof. {{ next_class.course.teacher.get_full_name|default:next_class.course.teacher.username }}
-            {% else %}
-                See you soon!
-            {% endif %}
-        </p>
-    </div>
-    
-    <div class="text-end">
-        <h3 class="fw-bold mb-0">
-            {% if next_class %}{{ next_class.start_hour }}:00{% else %}--:--{% endif %}
-        </h3>
-        
-        {% if next_class %}
-        <div class="badge bg-light bg-opacity-25 mt-2">
-            <i class="fas fa-map-marker-alt me-1"></i> Room {{ next_class.room.name|default:"-" }}
-        </div>
-        {% endif %}
-    </div>
-</div>
+                        <div>
+                            <span class="badge bg-white text-primary mb-2">
+                                {% if next_class %}{{ status_label }}{% else %}COMPLETED{% endif %}
+                            </span>
+                            
+                            <h2 class="fw-bold mb-1">
+                                {% if next_class %}{{ next_class.course.name }}{% else %}No Upcoming Classes{% endif %}
+                            </h2>
+                            
+                            <p class="mb-0 opacity-75">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>
+                                {% if next_class %}
+                                    Prof. {{ next_class.course.teacher.get_full_name|default:next_class.course.teacher.username }}
+                                {% else %}
+                                    See you soon!
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="text-end">
+                            <h3 class="fw-bold mb-0">
+                                {% if next_class %}{{ next_class.start_hour }}:00{% else %}--:--{% endif %}
+                            </h3>
+                            
+                            {% if next_class %}
+                            <div class="badge bg-light bg-opacity-25 mt-2">
+                                <i class="fas fa-map-marker-alt me-1"></i> Room {{ next_class.room.name|default:"-" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -59,23 +59,61 @@
                         <table class="table mb-0 text-center table-bordered border-light">
                             <thead class="bg-light text-muted small">
                                 <tr>
-                                    <th>TIME</th>
+                                    <th style="width: 80px;">TIME</th>
                                     {% for day in days %}<th>{{ day|upper }}</th>{% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for hour in hours %}
                                 <tr>
-                                    <td class="align-middle fw-bold text-muted small py-4">{{ hour }}:00</td>
+                                    <td class="align-middle fw-bold text-muted small">{{ hour }}:00</td>
                                     {% for day in days %}
-                                    <td class="p-2" style="width: 18%; background-color: #fafafa;">
+                                    <td class="position-relative p-0" style="background-color: #fafafa; height: 100px;">
                                         {% for session in sessions %}
-                                            {% if session.day == day and session.start_hour == hour %}                                                
-                                                <div class="p-2 rounded shadow-sm text-start" 
-                                                    style="background-color: #e7f0ff; border-left: 4px solid #0d6efd;">
-                                                    <div class="fw-bold small text-primary">{{ session.course.name }}</div>
-                                                    <div class="extra-small text-muted">Room {{ session.room.name }}</div>
+                                            {% if session.day == day and session.start_hour == hour %}                                 
+                                                
+                                                <div class="timetable-card shadow-sm border-0 text-start" 
+                                                     style="position: absolute; 
+                                                            top: 2px; 
+                                                            left: 2px; 
+                                                            width: calc(100% - 4px); 
+                                                            /* The Magic Math for Height */
+                                                            height: calc({{ session.duration }} * 100% + ({{ session.duration }} - 1) * 2px - 4px); 
+                                                            z-index: 10;
+                                                            background-color: #e3f2fd; 
+                                                            border-left: 5px solid #0288d1 !important; 
+                                                            border-radius: 4px;
+                                                            overflow: hidden;">
+                                                    
+                                                    <div class="p-2 h-100 d-flex flex-column justify-content-center">
+                                                        
+                                                        <div class="fw-bold text-dark mb-1 text-center" style="font-size: 0.85rem; line-height: 1.2;">
+                                                            {{ session.course.name }}
+                                                        </div>
+
+                                                        <div class="text-center mb-1">
+                                                            <span class="badge bg-primary bg-opacity-25 text-primary small px-2 py-1" style="font-size: 0.65rem;">
+                                                                {% if session.course.type == 'CM' %}CM{% else %}TD{% endif %}
+                                                            </span>
+                                                            <span class="badge bg-success bg-opacity-25 text-success small px-2 py-1 ms-1" style="font-size: 0.65rem;">
+                                                                {{ session.course.group }}
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="small text-muted ps-2 border-start border-primary border-opacity-25 ms-2">
+                                                            <div class="d-flex align-items-center mb-0" style="font-size: 0.75rem;">
+                                                                <i class="fas fa-door-open me-2 text-primary opacity-50" style="width: 12px;"></i> 
+                                                                <span>{{ session.room.name }}</span>
+                                                            </div>
+                                                            <div class="d-flex align-items-center" style="font-size: 0.75rem;">
+                                                                <i class="far fa-clock me-2 text-primary opacity-50" style="width: 12px;"></i>
+                                                                <span>{{ session.start_hour }}-{{ session.end_hour }}h</span>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
                                                 </div>
+
                                             {% endif %}
                                         {% endfor %}
                                     </td>
@@ -90,7 +128,6 @@
         </div>
 
         <div class="col-md-4">
-            
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-0 py-3">
                     <h6 class="fw-bold mb-0">Semester Summary</h6>
@@ -129,24 +166,42 @@
                     </a>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
 <style>
-    .extra-small { font-size: 0.75rem; }
-    /* Forces the gridlines to appear clearly */
+    /* 1. Force strict Grid Layout */
     .table-bordered th,
     .table-bordered td {
-        border: 1px solid #dee2e6 !important; /* Standard Bootstrap gray line */
+        border: 1px solid #dee2e6 !important;
+        vertical-align: middle;
     }
 
-    /* Makes the Time column stand out slightly */
+    /* 2. FIX HEIGHT: This ensures the 'calc' math works perfectly */
+    .table td {
+        height: 100px; 
+        vertical-align: top !important; /* Start content from top */
+    }
+
+    /* 3. Style the Time Column */
     .table td:first-child {
         background-color: #f8f9fa;
+        vertical-align: middle !important;
+        font-weight: bold;
+        color: #6c757d;
         border-right: 2px solid #dee2e6 !important;
     }
-    
+
+    /* 4. Interactive Card Effects */
+    .timetable-card {
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+    }
+    .timetable-card:hover {
+        transform: scale(1.03);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        z-index: 100 !important; /* Pop to front on hover */
+    }
 </style>
 {% endblock %}

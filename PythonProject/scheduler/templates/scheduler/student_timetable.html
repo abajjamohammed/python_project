@@ -50,13 +50,17 @@
         margin-top: 0.25rem;
     }
 
-    .timetable-card {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        overflow: hidden;
-    }
-
+   .timetable-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    
+    grid-row: span var(--duration, 1); /* Spans rows based on duration */
+    height: 100%;                      /* Makes card fill the span */
+    display: flex;                     /* Helps align text inside */
+    flex-direction: column;
+}
     .table-responsive {
         border-radius: 12px;
     }
